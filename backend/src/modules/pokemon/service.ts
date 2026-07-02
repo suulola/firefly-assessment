@@ -1,57 +1,14 @@
-import { POKEAPI_BASE_URL, pokeApiGet } from "./repository.js";
-
-export interface PokemonListItem {
-  id: number;
-  name: string;
-  spriteUrl: string;
-}
-
-export interface EvolutionStage {
-  id: number;
-  name: string;
-  spriteUrl: string;
-}
-
-export interface PokemonDetail {
-  id: number;
-  name: string;
-  spriteUrl: string;
-  types: string[];
-  abilities: { name: string; hidden: boolean }[];
-  evolutions: EvolutionStage[];
-}
-
-interface PokeApiListResponse {
-  results: { name: string; url: string }[];
-}
-
-export interface PokemonListPage {
-  items: PokemonListItem[];
-  total: number;
-  limit: number;
-  offset: number;
-  hasMore: boolean;
-}
-
-interface PokeApiPokemon {
-  id: number;
-  name: string;
-  types: { slot: number; type: { name: string } }[];
-  abilities: { ability: { name: string }; is_hidden: boolean }[];
-}
-
-interface PokeApiSpecies {
-  evolution_chain: { url: string } | null;
-}
-
-interface PokeApiEvolutionNode {
-  species: { name: string; url: string };
-  evolves_to: PokeApiEvolutionNode[];
-}
-
-interface PokeApiEvolutionChain {
-  chain: PokeApiEvolutionNode;
-}
+import { POKEAPI_BASE_URL, pokeApiGet } from "@/modules/pokemon/repository.js";
+import type {
+  EvolutionStage,
+  PokeApiEvolutionChain,
+  PokeApiEvolutionNode,
+  PokeApiListResponse,
+  PokeApiPokemon,
+  PokeApiSpecies,
+  PokemonDetail,
+  PokemonListPage,
+} from "@/modules/pokemon/types.js";
 
 function spriteUrlFor(id: number): string {
   return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
@@ -93,7 +50,7 @@ export async function getPokemonListPage(
   };
 }
 
-function flattenEvolutionChain(chain: PokeApiEvolutionNode): EvolutionStage[] {
+export function flattenEvolutionChain(chain: PokeApiEvolutionNode): EvolutionStage[] {
   const stages: EvolutionStage[] = [];
   const walk = (node: PokeApiEvolutionNode) => {
     const id = idFromUrl(node.species.url);

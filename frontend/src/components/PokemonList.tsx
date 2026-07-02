@@ -1,16 +1,16 @@
-import { useEffect, useState } from "react";
-import { useInfiniteQuery } from "@tanstack/react-query";
-import {
-  getPokemonListPage,
-  type PokemonListItem,
-  type PokemonListPage,
-} from "@/services/pokemonService";
+import { useRef } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
+import { usePokemonListView } from "@/hooks/usePokemonListView";
 import { formatName, numberLabel } from "@/lib/pokemonFormat";
-import styles from "./PokemonList.module.css";
+import styles from "./PokemonList.module.scss";
 
 const SKELETON_ROWS = Array.from({ length: 9 }, (_, i) => i);
-const PAGE_SIZE = 30;
 const LOAD_MORE_THRESHOLD_PX = 200;
+// Matches the row's rendered height (44px avatar + 9px top/bottom padding +
+// 1px border). Used as both the virtualizer's size estimate and its jsdom
+// fallback (see the `measureElement` override below) — real browsers still
+// remeasure dynamically, this is just what's assumed until then.
+const ROW_HEIGHT_PX = 63;
 
 interface PokemonListProps {
   selectedId: number | null;
@@ -18,6 +18,7 @@ interface PokemonListProps {
   favoriteIds: Set<number>;
   favoriteErrors: Record<number, string>;
   onToggleFavorite: (id: number) => void;
+  isFavoritePending: (id: number) => boolean;
 }
 
 export function PokemonList({
@@ -26,70 +27,46 @@ export function PokemonList({
   favoriteIds,
   favoriteErrors,
   onToggleFavorite,
+  isFavoritePending,
 }: PokemonListProps) {
-  const [favoritesOnly, setFavoritesOnly] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const {
+    items,
+    status,
+    total,
+    isFetchingNextPage,
+    favoritesOnly,
+    toggleFavoritesOnly,
+    searchQuery,
+    setSearchQuery,
+    onScrollNearBottom,
+    refetch,
+  } = usePokemonListView(favoriteIds);
 
-  const pokemonQuery = useInfiniteQuery({
-    queryKey: ["pokemon-list"],
-    queryFn: ({ pageParam }) => getPokemonListPage(PAGE_SIZE, pageParam),
-    initialPageParam: 0,
-    getNextPageParam: (lastPage: PokemonListPage) =>
-      lastPage.hasMore ? lastPage.offset + lastPage.items.length : undefined,
+  const isSearching = searchQuery.trim() !== "";
+
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const rowVirtualizer = useVirtualizer({
+    count: items.length,
+    getScrollElement: () => scrollAreaRef.current,
+    estimateSize: () => ROW_HEIGHT_PX,
+    overscan: 6,
+    // jsdom (tests) reports 0 for getBoundingClientRect() — fall back to the
+    // estimate rather than collapsing every row to zero height there.
+    measureElement: (el) => el.getBoundingClientRect().height || ROW_HEIGHT_PX,
   });
-
-  const items: PokemonListItem[] =
-    pokemonQuery.data?.pages.flatMap((page) => page.items) ?? [];
-  const total = pokemonQuery.data?.pages[0]?.total ?? 0;
-  const status = pokemonQuery.isPending
-    ? "loading"
-    : pokemonQuery.isError
-      ? "error"
-      : "ready";
-
-  const normalizedQuery = searchQuery.trim().toLowerCase();
-  const visibleItems = items
-    .filter((item) => !favoritesOnly || favoriteIds.has(item.id))
-    .filter(
-      (item) =>
-        normalizedQuery === "" ||
-        formatName(item.name).toLowerCase().includes(normalizedQuery),
-    );
-  const displayedItems = visibleItems.slice(0, visibleCount);
-
-  const canLoadMoreUnfiltered =
-    status === "ready" && pokemonQuery.hasNextPage && !favoritesOnly;
-
-  useEffect(() => {
-    setVisibleCount(PAGE_SIZE);
-  }, [favoritesOnly, normalizedQuery]);
-
-  function loadMore() {
-    if (!canLoadMoreUnfiltered || pokemonQuery.isFetchingNextPage) return;
-    void pokemonQuery.fetchNextPage().then((result) => {
-      if (!result.isError) {
-        setVisibleCount((prev) => prev + PAGE_SIZE);
-      }
-    });
-  }
 
   function handleScroll(e: React.UIEvent<HTMLDivElement>) {
     const el = e.currentTarget;
     const nearBottom =
       el.scrollTop + el.clientHeight >= el.scrollHeight - LOAD_MORE_THRESHOLD_PX;
     if (nearBottom) {
-      if (visibleCount < visibleItems.length) {
-        setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, visibleItems.length));
-      } else {
-        loadMore();
-      }
+      onScrollNearBottom();
     }
   }
 
   return (
-    <div className={styles.panel}>
-      <div className={styles.header}>
+    <nav className={styles.panel} aria-label="Pokémon list">
+      <header className={styles.header}>
         <div>
           <h1 className={styles.title}>Pokémon Explorer</h1>
           <div className={styles.subtitle}>
@@ -98,6 +75,11 @@ export function PokemonList({
               : " "}
           </div>
         </div>
+        {status === "ready" && (isSearching || favoritesOnly) && (
+          <span role="status" className={styles.visuallyHidden}>
+            {items.length} {items.length === 1 ? "result" : "results"}
+          </span>
+        )}
         <input
           type="search"
           className={styles.searchInput}
@@ -111,22 +93,21 @@ export function PokemonList({
           type="button"
           className={styles.favoritesToggle}
           aria-pressed={favoritesOnly}
-          onClick={() => setFavoritesOnly((prev) => !prev)}
+          onClick={toggleFavoritesOnly}
         >
           <span>Favorites only</span>
-          <span
-            className={styles.toggleTrack}
-            style={{ background: favoritesOnly ? "#4c5fd5" : "#dedcd6" }}
-          >
-            <span
-              className={styles.toggleKnob}
-              style={{ left: favoritesOnly ? 20 : 2 }}
-            />
+          <span className={styles.toggleTrack} data-checked={favoritesOnly}>
+            <span className={styles.toggleKnob} data-checked={favoritesOnly} />
           </span>
         </button>
-      </div>
+      </header>
 
-      <div className={styles.scrollArea} data-testid="pokemon-scroll-area" onScroll={handleScroll}>
+      <div
+        ref={scrollAreaRef}
+        className={styles.scrollArea}
+        data-testid="pokemon-scroll-area"
+        onScroll={handleScroll}
+      >
         {status === "loading" && (
           <div role="status">
             <span className={styles.visuallyHidden}>Loading Pokémon…</span>
@@ -134,8 +115,8 @@ export function PokemonList({
               <div className={styles.skeletonRow} key={row}>
                 <div className={styles.skeletonAvatar} />
                 <div className={styles.skeletonLines}>
-                  <div className={styles.skeletonLine} style={{ width: "70%" }} />
-                  <div className={styles.skeletonLine} style={{ width: "35%" }} />
+                  <div className={`${styles.skeletonLine} ${styles.skeletonLinePrimary}`} />
+                  <div className={`${styles.skeletonLine} ${styles.skeletonLineSecondary}`} />
                 </div>
               </div>
             ))}
@@ -149,13 +130,13 @@ export function PokemonList({
             <div className={styles.errorMessage}>
               Something went wrong loading the list.
             </div>
-            <button className={styles.retryButton} onClick={() => pokemonQuery.refetch()}>
+            <button className={styles.retryButton} onClick={refetch}>
               Retry
             </button>
           </div>
         )}
 
-        {status === "ready" && visibleItems.length === 0 && favoritesOnly && normalizedQuery === "" && (
+        {status === "ready" && items.length === 0 && favoritesOnly && !isSearching && (
           <div className={styles.emptyFavorites}>
             <div className={styles.emptyFavoritesIcon}>☆</div>
             <div className={styles.emptyFavoritesTitle}>No favorites yet</div>
@@ -165,7 +146,10 @@ export function PokemonList({
           </div>
         )}
 
-        {status === "ready" && visibleItems.length === 0 && normalizedQuery !== "" && (
+        {status === "ready" &&
+          items.length === 0 &&
+          isSearching &&
+          !isFetchingNextPage && (
           <div className={styles.emptyFavorites}>
             <div className={styles.emptyFavoritesIcon}>🔍</div>
             <div className={styles.emptyFavoritesTitle}>No Pokémon found</div>
@@ -173,19 +157,26 @@ export function PokemonList({
           </div>
         )}
 
-        {status === "ready" && visibleItems.length > 0 && (
-          <ul className={styles.list}>
-            {displayedItems.map((item) => {
+        {status === "ready" && items.length > 0 && (
+          <ul className={styles.list} style={{ height: rowVirtualizer.getTotalSize() }}>
+            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+              const item = items[virtualRow.index];
               const displayName = formatName(item.name);
               const selected = item.id === selectedId;
               const isFavorited = favoriteIds.has(item.id);
               return (
-                <li key={item.id}>
+                <li
+                  key={item.id}
+                  data-index={virtualRow.index}
+                  ref={rowVirtualizer.measureElement}
+                  className={styles.virtualRow}
+                  style={{ transform: `translateY(${virtualRow.start}px)` }}
+                >
                   <div className={`${styles.row} ${selected ? styles.rowSelected : ""}`}>
                     <button
                       type="button"
                       className={styles.selectButton}
-                      aria-pressed={selected}
+                      aria-current={selected ? "true" : undefined}
                       onClick={() => onSelect(item.id)}
                     >
                       <div className={styles.avatar}>
@@ -206,6 +197,8 @@ export function PokemonList({
                       className={styles.favButton}
                       aria-label={`Toggle favorite for ${displayName}`}
                       aria-pressed={isFavorited}
+                      aria-busy={isFavoritePending(item.id)}
+                      disabled={isFavoritePending(item.id)}
                       onClick={() => onToggleFavorite(item.id)}
                     >
                       <span key={isFavorited ? "fav" : "unfav"} className={styles.favIcon}>
@@ -224,12 +217,12 @@ export function PokemonList({
           </ul>
         )}
 
-        {status === "ready" && pokemonQuery.isFetchingNextPage && (
+        {status === "ready" && isFetchingNextPage && (
           <div className={styles.loadMoreStatus} role="status">
             Loading more Pokémon…
           </div>
         )}
       </div>
-    </div>
+    </nav>
   );
 }

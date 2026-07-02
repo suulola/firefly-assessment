@@ -13,9 +13,11 @@
   },
   "dependencies": {
     "@tanstack/react-query": "^5.101.2",
+    "@tanstack/react-virtual": "^3.14.5",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "sonner": "^2.0.7"
+    "sonner": "^2.0.7",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",
@@ -28,6 +30,7 @@
     "jsdom": "^29.1.1",
     "msw": "^2.14.6",
     "oxlint": "^1.71.0",
+    "sass": "^1.101.0",
     "typescript": "~6.0.2",
     "vite": "^8.1.1",
     "vitest": "^4.1.9"

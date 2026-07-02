@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { http, HttpResponse } from "msw";
+import { http } from "msw";
 import { App } from "../src/App";
 import { mswServer } from "./msw/server";
+import { ok } from "./msw/envelope";
+import { pokemonPageHandler } from "./msw/pokemonHandlers";
 import { BACKEND_BASE_URL } from "../src/lib/backendClient";
 
 const list = [
@@ -14,8 +16,10 @@ const list = [
 
 async function renderReadyList() {
   mswServer.use(
-    http.get(`${BACKEND_BASE_URL}/pokemon`, () => HttpResponse.json(list)),
-    http.get(`${BACKEND_BASE_URL}/favorites`, () => HttpResponse.json([])),
+    http.get(`${BACKEND_BASE_URL}/pokemon`, () =>
+      ok({ items: list, total: list.length, limit: list.length, offset: 0, hasMore: false }),
+    ),
+    http.get(`${BACKEND_BASE_URL}/favorites`, () => ok([])),
   );
   render(<App />);
   await screen.findAllByRole("listitem");
@@ -32,6 +36,19 @@ describe("Search", () => {
     expect(screen.getByText("Ivysaur")).toBeInTheDocument();
     expect(screen.queryByText("Bulbasaur")).not.toBeInTheDocument();
     expect(screen.queryByText("Venusaur")).not.toBeInTheDocument();
+    // Announced to assistive tech, not just shown visually via the list length.
+    expect(await screen.findByText("1 result")).toBeInTheDocument();
+  });
+
+  it("keeps focus on the search input while typing filters the list (no disruptive focus jump)", async () => {
+    await renderReadyList();
+
+    const searchInput = screen.getByRole("searchbox", { name: /search/i });
+    searchInput.focus();
+    await userEvent.type(searchInput, "vy");
+    await screen.findAllByRole("listitem");
+
+    expect(searchInput).toHaveFocus();
   });
 
   it("restores the full list when the search input is cleared", async () => {
@@ -46,56 +63,65 @@ describe("Search", () => {
     expect(await screen.findAllByRole("listitem")).toHaveLength(3);
   });
 
-  it("resets to the first lazy-load batch after clearing search, with the full list reachable again by scrolling", async () => {
-    // Uses a fixture larger than BATCH_SIZE (30) specifically because a small
-    // fixture can't distinguish "search cleared correctly" from "the batch
-    // reset happened to cover everything since the list was tiny anyway."
+  it("keeps loading pages while searching until a match beyond the first page is found", async () => {
     const bigList = Array.from({ length: 150 }, (_, i) => {
       const id = i + 1;
       return {
         id,
-        name: id <= 40 ? `keeperon-${id}` : `other-${id}`,
+        // id 45 is beyond the first 30-item page — only reachable by
+        // fetching a second page.
+        name: id === 45 ? "raretail" : `common-${id}`,
         spriteUrl: `https://example.com/${id}.png`,
       };
     });
     mswServer.use(
-      http.get(`${BACKEND_BASE_URL}/pokemon`, () => HttpResponse.json(bigList)),
-      http.get(`${BACKEND_BASE_URL}/favorites`, () => HttpResponse.json([])),
+      pokemonPageHandler(bigList),
+      http.get(`${BACKEND_BASE_URL}/favorites`, () => ok([])),
     );
     render(<App />);
     await screen.findAllByRole("listitem");
 
-    const searchInput = screen.getByRole("searchbox", { name: /search/i });
-    await userEvent.type(searchInput, "keeperon");
+    await userEvent.type(screen.getByRole("searchbox", { name: /search/i }), "raretail");
 
-    // 40 matches, but only the first batch (30) renders up front.
-    expect(await screen.findAllByRole("listitem")).toHaveLength(30);
+    expect(await screen.findByText("Raretail")).toBeInTheDocument();
+  });
 
-    const scrollArea = screen.getByTestId("pokemon-scroll-area");
-    Object.defineProperty(scrollArea, "scrollHeight", { value: 3000, configurable: true });
-    Object.defineProperty(scrollArea, "clientHeight", { value: 400, configurable: true });
-    Object.defineProperty(scrollArea, "scrollTop", { value: 2700, configurable: true });
-    fireEvent.scroll(scrollArea);
-
-    // Scrolling loads the rest of the matches, capped at 40 — search is still filtering.
-    await waitFor(() => {
-      expect(screen.getAllByRole("listitem")).toHaveLength(40);
+  it("stops fetching once every page has loaded and a search matches nothing", async () => {
+    const bigList = Array.from({ length: 150 }, (_, i) => {
+      const id = i + 1;
+      return { id, name: `common-${id}`, spriteUrl: `https://example.com/${id}.png` };
     });
+    let requestCount = 0;
+    mswServer.use(
+      http.get(`${BACKEND_BASE_URL}/pokemon`, ({ request }) => {
+        requestCount += 1;
+        const url = new URL(request.url);
+        const limit = Number(url.searchParams.get("limit") ?? 30);
+        const offset = Number(url.searchParams.get("offset") ?? 0);
+        const items = bigList.slice(offset, offset + limit);
+        return ok({
+          items,
+          total: bigList.length,
+          limit: items.length,
+          offset,
+          hasMore: offset + items.length < bigList.length,
+        });
+      }),
+      http.get(`${BACKEND_BASE_URL}/favorites`, () => ok([])),
+    );
+    render(<App />);
+    await screen.findAllByRole("listitem");
 
-    await userEvent.clear(searchInput);
+    await userEvent.type(
+      screen.getByRole("searchbox", { name: /search/i }),
+      "nonexistent-pokemon",
+    );
 
-    // Clearing resets to the first batch of the full 150 — not stuck at 40,
-    // and not instantly rendering all 150 (that would defeat lazy-loading).
-    await waitFor(() => {
-      expect(screen.getAllByRole("listitem")).toHaveLength(30);
-    });
-
-    fireEvent.scroll(scrollArea);
-
-    // Proves the search restriction is really gone: scrolling now reaches
-    // well past the old 40-item cap.
-    await waitFor(() => {
-      expect(screen.getAllByRole("listitem")).toHaveLength(60);
-    });
+    expect(await screen.findByText(/no pokémon found/i)).toBeInTheDocument();
+    // 150 items / 30 per page = 5 requests to exhaust hasMore. Asserting the
+    // exact count (not just "stopped eventually") proves the background
+    // search-fetch loop halted the moment the backend's hasMore went false,
+    // rather than continuing to poll the last page.
+    expect(requestCount).toBe(5);
   });
 });

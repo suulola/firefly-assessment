@@ -24,6 +24,36 @@
   overflow-y: auto;
   font-family: var(--font-sans);
   color: var(--color-text);
+
+  @media (max-width: 767px) {
+    :global([data-mobile-view="list"]) & {
+      display: none;
+    }
+  }
+}
+
+.backButton {
+  display: none;
+
+  @media (max-width: 767px) {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 16px 0 0 16px;
+    padding: 8px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+
+    &:hover {
+      background: var(--color-surface-subtle);
+    }
+  }
 }
 
 .empty {
@@ -59,6 +89,10 @@
 .content {
   padding: 48px 56px;
   max-width: 640px;
+
+  @media (max-width: 767px) {
+    padding: 20px 20px 40px;
+  }
 }
 
 .skeletonHeader {
@@ -158,6 +192,10 @@
   gap: 22px;
 }
 
+.identity {
+  flex: 1;
+}
+
 .favError {
   margin-top: 10px;
   font-size: 13px;
@@ -213,13 +251,15 @@
 }
 
 .name {
+  margin: 0;
+  margin-top: 2px;
   font-size: 26px;
   font-weight: 800;
   letter-spacing: -0.01em;
-  margin-top: 2px;
 }
 
 .sectionLabel {
+  margin: 0;
   font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 600;

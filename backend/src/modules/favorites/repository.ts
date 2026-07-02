@@ -1,5 +1,6 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
+import type { FavoritesStore } from "@/modules/favorites/types.js";
 
 // Data-access layer for the favorites module: file-based JSON storage
 // behind a read/write interface, so the storage mechanism can be swapped
@@ -9,11 +10,6 @@ import { fileURLToPath } from "node:url";
 const DEFAULT_STORE_PATH = fileURLToPath(
   new URL("../../../data/favorites.json", import.meta.url),
 );
-
-export interface FavoritesStore {
-  read(): Promise<number[]>;
-  write(favoriteIds: number[]): Promise<void>;
-}
 
 export function createFileFavoritesStore(
   storePath: string = DEFAULT_STORE_PATH,

@@ -1,10 +1,5 @@
 import type { Response } from "express";
-
-export interface ApiResponse<T> {
-  success: boolean;
-  data: T | null;
-  message: string;
-}
+import type { ApiResponse } from "@/http/types.js";
 
 export function successResponse<T>(
   res: Response,

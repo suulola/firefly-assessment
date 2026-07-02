@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { http, HttpResponse } from "msw";
 import request from "supertest";
-import { app } from "../src/app.js";
+import { app } from "@/app.js";
 import { mswServer } from "./msw/server.js";
-import { POKEAPI_BASE_URL } from "../src/modules/pokemon/repository.js";
+import { POKEAPI_BASE_URL } from "@/modules/pokemon/repository.js";
 
 function mockPokemon(id: number, name: string) {
   return {

@@ -3,16 +3,17 @@ import {
   catchErrorResponse,
   errorResponse,
   successResponse,
-} from "../../http/response.js";
-import type { FavoritesStore } from "./repository.js";
-import { addFavorite, listFavorites, removeFavorite } from "./service.js";
+} from "@/http/response.js";
+import type { FavoritesStore } from "@/modules/favorites/types.js";
+import { addFavorite, listFavorites, removeFavorite } from "@/modules/favorites/service.js";
 
 export function createFavoritesRouter(store: FavoritesStore): Router {
   const router = Router();
 
   router.get("/", async (_req, res) => {
     try {
-      successResponse(res, await listFavorites(store), "Favorites loaded.");
+      const favorites = await listFavorites(store);
+      successResponse(res, favorites, "Favorites loaded.");
     } catch {
       catchErrorResponse(res, "Failed to load favorites.");
     }

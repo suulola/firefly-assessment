@@ -19,6 +19,16 @@
   border-right: 1px solid var(--color-border);
   font-family: var(--font-sans);
   color: var(--color-text);
+
+  @media (max-width: 767px) {
+    width: 100%;
+    min-width: 0;
+    border-right: none;
+
+    :global([data-mobile-view="detail"]) & {
+      display: none;
+    }
+  }
 }
 
 .header {
@@ -60,9 +70,10 @@
   color: var(--color-text);
 }
 
-.searchInput:focus {
+.searchInput:focus-visible {
   outline: none;
   border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
 }
 
 .toggleTrack {
@@ -71,18 +82,28 @@
   border-radius: 11px;
   position: relative;
   flex-shrink: 0;
+  background: var(--color-toggle-off);
   transition: background 0.15s;
+}
+
+.toggleTrack[data-checked="true"] {
+  background: var(--color-primary);
 }
 
 .toggleKnob {
   position: absolute;
   top: 2px;
+  left: 2px;
   width: 18px;
   height: 18px;
   border-radius: 9px;
   background: var(--color-surface);
   box-shadow: var(--shadow-toggle);
   transition: left 0.15s;
+}
+
+.toggleKnob[data-checked="true"] {
+  left: 20px;
 }
 
 .emptyFavorites {
@@ -158,6 +179,14 @@
   animation: shimmer 1.3s ease-in-out infinite;
 }
 
+.skeletonLinePrimary {
+  width: 70%;
+}
+
+.skeletonLineSecondary {
+  width: 35%;
+}
+
 .errorBox {
   margin: 24px 16px;
   padding: 20px 16px;
@@ -205,6 +234,15 @@
   list-style: none;
   margin: 0;
   padding: 0;
+  position: relative;
+  width: 100%;
+}
+
+.virtualRow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
 }
 
 .favError {

@@ -1,4 +1,4 @@
-import type { FavoritesStore } from "./repository.js";
+import type { FavoritesStore } from "@/modules/favorites/types.js";
 
 export async function addFavorite(store: FavoritesStore, id: number): Promise<void> {
   const current = await store.read();

@@ -10,6 +10,7 @@
   --color-border-soft: #f3f2ee;
   --color-primary: #4c5fd5;
   --color-primary-soft: rgba(76, 95, 213, 0.12);
+  --color-toggle-off: #dedcd6;
   --color-danger: #8a3a34;
   --color-danger-muted: #9c6b66;
   --color-danger-surface: #fdf6f5;
@@ -36,4 +37,12 @@ body {
 
 #root {
   min-height: 100vh;
+}
+
+/* Consistent visible focus ring for every button in the app, so keyboard
+   users always get a clear indicator regardless of which component/module
+   rendered the button. */
+button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--color-primary-soft), 0 0 0 1px var(--color-primary);
 }

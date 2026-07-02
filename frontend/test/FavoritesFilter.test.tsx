@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { http, HttpResponse } from "msw";
+import { http } from "msw";
 import { App } from "../src/App";
 import { mswServer } from "./msw/server";
+import { ok } from "./msw/envelope";
 import { BACKEND_BASE_URL } from "../src/lib/backendClient";
 
 const list = [
@@ -14,8 +15,10 @@ const list = [
 
 async function renderWithFavorites(favoriteIds: number[]) {
   mswServer.use(
-    http.get(`${BACKEND_BASE_URL}/pokemon`, () => HttpResponse.json(list)),
-    http.get(`${BACKEND_BASE_URL}/favorites`, () => HttpResponse.json(favoriteIds)),
+    http.get(`${BACKEND_BASE_URL}/pokemon`, () =>
+      ok({ items: list, total: list.length, limit: list.length, offset: 0, hasMore: false }),
+    ),
+    http.get(`${BACKEND_BASE_URL}/favorites`, () => ok(favoriteIds)),
   );
   render(<App />);
   await screen.findAllByRole("listitem");

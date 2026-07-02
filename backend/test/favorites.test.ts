@@ -3,8 +3,8 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import request from "supertest";
-import { createApp } from "../src/app.js";
-import { createFileFavoritesStore } from "../src/modules/favorites/repository.js";
+import { createApp } from "@/app.js";
+import { createFileFavoritesStore } from "@/modules/favorites/repository.js";
 
 let tempDir: string | undefined;
 

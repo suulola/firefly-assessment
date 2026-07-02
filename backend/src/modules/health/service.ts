@@ -1,4 +1,4 @@
-import { pokeApiGet } from "../pokemon/repository.js";
+import { pokeApiGet } from "@/modules/pokemon/repository.js";
 
 export function checkLiveness(): { status: "ok" } {
   return { status: "ok" };
