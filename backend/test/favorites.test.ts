@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -97,5 +97,20 @@ describe("favorites", () => {
     const afterRemove = await request(app).get("/favorites");
     expect(afterRemove.status).toBe(200);
     expect(afterRemove.body).toEqual([6]);
+  });
+
+  it("uses FAVORITES_STORE_PATH when no explicit option is passed (Railway volume config)", async () => {
+    const storePath = await tempStorePath();
+    vi.stubEnv("FAVORITES_STORE_PATH", storePath);
+
+    try {
+      const app = createApp({});
+      await request(app).post("/favorites").send({ id: 25 });
+
+      const ids = await createFileFavoritesStore(storePath).read();
+      expect(ids).toEqual([25]);
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 });

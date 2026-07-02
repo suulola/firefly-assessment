@@ -1,7 +1,7 @@
 ---
 title: README & submission polish
 labels: [ready-for-agent]
-status: open
+status: done
 ---
 
 ## What to build
@@ -15,10 +15,10 @@ The README is itself a required deliverable per the source requirement doc's Sub
 
 ## Acceptance criteria
 
-- [ ] README includes a brief approach overview.
-- [ ] README includes step-by-step local run instructions for both `backend/` and `frontend/`, verified by actually following them from a clean checkout.
-- [ ] README documents assumptions made, including the detail-endpoint addition and the single-shared-favorites-list decision.
-- [ ] README includes live links if issue 008 shipped, or explicitly notes deployment was skipped if not.
+- [x] README includes a brief approach overview.
+- [x] README includes step-by-step local run instructions for both `backend/` and `frontend/`, verified by actually following them from a clean checkout. (Copied the repo, excluding `node_modules`/`dist`/`.git`/generated data, to a scratch directory and ran `npm install` + `npm run dev` for both services exactly as documented — confirmed backend on `:4000`, frontend on `:5173`, and the dev proxy reaching the backend without `VITE_BACKEND_URL` set, all matching the README.)
+- [x] README documents assumptions made, including the detail-endpoint addition and the single-shared-favorites-list decision.
+- [x] README includes live links if issue 008 shipped, or explicitly notes deployment was skipped if not. (Issue 008 has not shipped — README's Deployment section explicitly says "Deployment pending — no live URLs yet.")
 
 ## Blocked by
 

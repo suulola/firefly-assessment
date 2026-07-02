@@ -6,7 +6,9 @@ status: open
 
 ## What to build
 
-Deploy both services and confirm they talk to each other in production, per `PRD.md`'s bonus deployment guidance: frontend to Vercel or Netlify, backend to Render (or equivalent). Wire up production environment variables (e.g. backend base URL for the frontend, CORS allow-list on the backend for the deployed frontend origin) and confirm favorites persistence works against the deployed backend's filesystem/storage.
+Deploy both services and confirm they talk to each other in production, per `PRD.md`'s bonus deployment guidance: frontend to Vercel, backend to Railway. Wire up production environment variables (backend base URL for the frontend, CORS allow-list on the backend for the deployed frontend origin) and confirm favorites persistence works against the deployed backend's filesystem/storage.
+
+**Prep status (not deployment itself):** environment/config prep is done — see `README.md`'s Deployment section for exact steps, and Environment variables / Production notes for the env vars and the Railway ephemeral-filesystem caveat. Backend CORS (`CORS_ORIGIN`, comma-separated, fails closed to `localhost:5173` if unset — see `backend/src/corsConfig.ts`) and `FAVORITES_STORE_PATH` are implemented and tested (`backend/test/cors.test.ts`, `backend/test/favorites.test.ts`). No actual Railway service or Vercel project has been created, and nothing has been deployed — the checklist below stays unchecked until real URLs exist and have been manually verified.
 
 ## Acceptance criteria
 
