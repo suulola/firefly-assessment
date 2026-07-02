@@ -44,7 +44,7 @@ export async function readApiResponse<T>(
     // backend and here (proxy, malformed error page, etc.) broke that
     // contract. Worth reporting distinctly from an ordinary HTTP failure.
     reportError(error, { source, action: "parse-envelope", extra: { status: response.status } });
-    throw new Error(fallbackMessage);
+    throw new Error(fallbackMessage, { cause: error });
   }
 
   if (!isWellFormedApiResponse<T>(body)) {

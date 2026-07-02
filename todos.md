@@ -28,5 +28,21 @@
 - Hardened `queryClient.ts` defaults: network-failure-only retry (`TypeError`, capped at 2 attempts), explicit `staleTime`/`gcTime`/`refetchOnWindowFocus`/`refetchOnReconnect`, `mutations.retry: false`.
 - Accessibility pass: `aria-current` for the selected list item, `aria-busy` on pending favorite buttons, autofocused retry button in `ErrorFallback`, a live-region result-count announcement while searching/filtering.
 - Reassessed the Suspense decision (still not adopted — see `CLAUDE.md`).
+- Hardened backend architecture:
+  - Added centralized config (`src/config.ts`) with fail-fast numeric env validation.
+  - Added request ids, structured request/error logging, typed HTTP errors, central error middleware, and route-edge validation.
+  - Added `helmet` and a 16kb JSON body limit while preserving existing CORS behavior.
+  - Added PokéAPI timeout/abort handling, upstream response validation, and bounded in-memory TTL caching.
+  - Added file-store parent directory creation, JSON validation, and per-store serialized favorite mutations.
+  - Changed file-store writes to temp-file-plus-rename to avoid partially-written JSON.
+  - Added `/health/ready` readiness checks and graceful shutdown in `server.ts`.
+  - Added envelope-based 404 responses for unknown routes.
+  - Added backend ESLint via `npm run lint`.
+  - Added `express-rate-limit`, returning the standard API envelope for `429` responses.
+  - Added an OpenAPI contract at `/openapi.json` and Swagger UI at `/docs`.
 
+## Deferred
 
+- API versioning remains documented-only; deployed routes stay `/pokemon`, `/favorites`, and `/health`.
+- File-backed favorites storage remains assessment-scope; no database migration.
+- No authentication, metrics endpoint, APM/distributed tracing, or multi-instance-safe favorites persistence yet.

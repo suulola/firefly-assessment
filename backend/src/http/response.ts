@@ -14,11 +14,23 @@ export function successResponse<T>(
   } satisfies ApiResponse<T>);
 }
 
-export function errorResponse(res: Response, statusCode: number, message: string) {
+export interface ErrorResponseOptions {
+  code?: string;
+  requestId?: string;
+}
+
+export function errorResponse(
+  res: Response,
+  statusCode: number,
+  message: string,
+  options: ErrorResponseOptions = {},
+) {
   return res.status(statusCode).json({
     success: false,
     data: null,
     message,
+    ...(options.code ? { code: options.code } : {}),
+    ...(options.requestId ? { requestId: options.requestId } : {}),
   } satisfies ApiResponse<never>);
 }
 

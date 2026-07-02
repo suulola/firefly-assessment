@@ -61,7 +61,7 @@ export function flattenEvolutionChain(chain: PokeApiEvolutionNode): EvolutionSta
   return stages;
 }
 
-export async function getPokemonDetail(id: string): Promise<PokemonDetail> {
+export async function getPokemonDetail(id: number): Promise<PokemonDetail> {
   const [poke, species] = await Promise.all([
     pokeApiGet<PokeApiPokemon>(`/pokemon/${id}`),
     pokeApiGet<PokeApiSpecies>(`/pokemon-species/${id}`),

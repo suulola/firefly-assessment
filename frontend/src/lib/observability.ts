@@ -17,7 +17,6 @@ export type ErrorSink = (error: unknown, context: ErrorReportContext) => void;
 
 const consoleSink: ErrorSink = (error, context) => {
   const label = context.action ? `${context.source}:${context.action}` : context.source;
-  // eslint-disable-next-line no-console -- this *is* the reporting sink.
   console.error(`[${label}]`, error, context.extra ?? {});
 };
 

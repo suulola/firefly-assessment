@@ -59,10 +59,12 @@ describe("GET /pokemon", () => {
     const response = await request(app).get("/pokemon");
 
     expect(response.status).toBe(502);
-    expect(response.body).toEqual({
+    expect(response.body).toMatchObject({
       success: false,
       data: null,
       message: "Failed to load the Pokémon list.",
+      code: "POKEAPI_UNAVAILABLE",
     });
+    expect(response.body.requestId).toEqual(expect.any(String));
   });
 });

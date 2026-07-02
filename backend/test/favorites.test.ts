@@ -1,10 +1,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import request from "supertest";
 import { createApp } from "@/app.js";
-import { createFileFavoritesStore } from "@/modules/favorites/repository.js";
+import {
+  createFileFavoritesStore,
+  FavoritesStorageError,
+} from "@/modules/favorites/repository.js";
 
 let tempDir: string | undefined;
 
@@ -130,5 +133,40 @@ describe("favorites", () => {
     } finally {
       vi.unstubAllEnvs();
     }
+  });
+
+  it("serializes concurrent favorite adds against the same file store", async () => {
+    const storePath = await tempStorePath();
+    const app = createApp({ favoritesStorePath: storePath });
+
+    await Promise.all(
+      Array.from({ length: 20 }, (_, index) =>
+        request(app).post("/favorites").send({ id: index + 1 }),
+      ),
+    );
+
+    const ids = await createFileFavoritesStore(storePath).read();
+    expect([...ids].sort((a, b) => a - b)).toEqual(
+      Array.from({ length: 20 }, (_, index) => index + 1),
+    );
+  });
+
+  it("creates the parent directory before writing the file store", async () => {
+    tempDir = await mkdtemp(join(tmpdir(), "favorites-test-"));
+    const storePath = join(tempDir, "nested", "favorites.json");
+    const store = createFileFavoritesStore(storePath);
+
+    await store.write([25]);
+
+    await expect(store.read()).resolves.toEqual([25]);
+  });
+
+  it("rejects malformed favorites JSON with a controlled storage error", async () => {
+    const storePath = await tempStorePath();
+    await writeFile(storePath, "{not-json");
+
+    await expect(createFileFavoritesStore(storePath).read()).rejects.toBeInstanceOf(
+      FavoritesStorageError,
+    );
   });
 });
