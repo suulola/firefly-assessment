@@ -1,7 +1,7 @@
 ---
 title: Project scaffolding & test tooling
 labels: [ready-for-agent]
-status: open
+status: done
 ---
 
 ## What to build
