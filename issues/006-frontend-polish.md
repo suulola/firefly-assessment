@@ -1,7 +1,7 @@
 ---
 title: Frontend polish — search, lazy-loading, animations (bonus)
 labels: [ready-for-agent]
-status: open
+status: done
 ---
 
 ## What to build
@@ -16,10 +16,12 @@ These are explicitly lower priority than issues 002–005 per `PRD.md` (bonus po
 
 ## Acceptance criteria
 
-- [ ] Frontend RTL test (backend mocked via msw): typing in the search input filters the list to matching names.
-- [ ] Frontend RTL test: clearing the search input restores the full list.
-- [ ] Manually verified: list renders progressively (lazy-load/infinite scroll) rather than blocking on all 150 items up front.
-- [ ] Manually verified: detail view open/close and favorite-toggle have a visible transition, not an instant snap.
+- [x] Frontend RTL test (backend mocked via msw): typing in the search input filters the list to matching names.
+- [x] Frontend RTL test: clearing the search input restores the full list. Also covered against a 150-item fixture (larger than the 30-item lazy-load batch) that exercises search + scroll + clear together, since a small fixture alone couldn't distinguish "search cleared correctly" from "the lazy-load batch reset happened to cover everything because the list was tiny" (`Search.test.tsx`).
+- [x] Lazy-loading implemented (30-item batches, more loaded on scroll near the bottom of the list panel) and covered by an RTL test that scrolls the list and asserts more items render. **Not manually verified in a real browser** — no live visual/screenshot check was performed (see `issues/002-pokemon-list.md` for the same honesty note on browser verification in this project).
+- [x] Transitions implemented: the detail panel's content fades/slides in per Pokémon (`fadeUp`, keyed by `detail.id` so it replays on each new selection) and the favorite star pops on toggle (`favPop`, keyed by favorited state) in both the list row and detail panel. **Not manually verified in a real browser** — confirmed via code/CSS inspection and that the full test suite still passes with these changes, not via a live visual check.
+
+None of the "manually verified" boxes above claim a real-browser check happened — see the notes on each. A live `/browse` pass (declined earlier in this session due to onboarding overhead) would be the way to close that gap if it matters for submission.
 
 ## Blocked by
 

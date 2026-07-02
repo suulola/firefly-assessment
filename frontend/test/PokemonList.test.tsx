@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { http, HttpResponse, delay } from "msw";
 import { PokemonList } from "../src/components/PokemonList";
 import { mswServer } from "./msw/server";
@@ -30,7 +30,7 @@ describe("PokemonList", () => {
     expect(await screen.findByRole("status")).toHaveTextContent(/loading/i);
   });
 
-  it("renders 150 items with name, sprite, and number once loaded", async () => {
+  it("renders an initial batch (not all 150 at once) with name, sprite, and number", async () => {
     mswServer.use(
       http.get(`${BACKEND_BASE_URL}/pokemon`, () =>
         HttpResponse.json(mockList(150)),
@@ -43,13 +43,36 @@ describe("PokemonList", () => {
       screen.getByRole("heading", { name: /pokémon explorer/i }),
     ).toBeInTheDocument();
     const items = await screen.findAllByRole("listitem");
-    expect(items).toHaveLength(150);
+    expect(items.length).toBeGreaterThan(0);
+    expect(items.length).toBeLessThan(150);
     expect(screen.getByText("Pokemon 1")).toBeInTheDocument();
     expect(screen.getByText("#001")).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "Pokemon 1" })).toHaveAttribute(
       "src",
       "https://example.com/sprites/1.png",
     );
+  });
+
+  it("loads more items when scrolled near the bottom of the list", async () => {
+    mswServer.use(
+      http.get(`${BACKEND_BASE_URL}/pokemon`, () =>
+        HttpResponse.json(mockList(150)),
+      ),
+    );
+
+    render(<PokemonList selectedId={null} onSelect={() => {}} favoriteIds={new Set()} favoriteErrors={{}} onToggleFavorite={() => {}} />);
+    const initialItems = await screen.findAllByRole("listitem");
+    const initialCount = initialItems.length;
+
+    const scrollArea = screen.getByTestId("pokemon-scroll-area");
+    Object.defineProperty(scrollArea, "scrollHeight", { value: 3000, configurable: true });
+    Object.defineProperty(scrollArea, "clientHeight", { value: 400, configurable: true });
+    Object.defineProperty(scrollArea, "scrollTop", { value: 2700, configurable: true });
+    fireEvent.scroll(scrollArea);
+
+    await waitFor(() => {
+      expect(screen.getAllByRole("listitem").length).toBeGreaterThan(initialCount);
+    });
   });
 
   it("shows a clear error message when the backend call fails", async () => {

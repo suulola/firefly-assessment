@@ -88,7 +88,7 @@ export function PokemonDetail({
         )}
 
         {status === "ready" && detail && (
-          <div>
+          <div key={detail.id} className={styles.readyContent}>
             <div className={styles.header}>
               <div className={styles.avatar}>
                 <img
@@ -107,7 +107,10 @@ export function PokemonDetail({
                 aria-pressed={favoriteIds.has(detail.id)}
                 onClick={() => onToggleFavorite(detail.id)}
               >
-                <span className={styles.favIcon}>
+                <span
+                  key={favoriteIds.has(detail.id) ? "fav" : "unfav"}
+                  className={styles.favIcon}
+                >
                   {favoriteIds.has(detail.id) ? "★" : "☆"}
                 </span>
                 <span>

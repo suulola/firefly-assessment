@@ -3,6 +3,12 @@
   100% { background-position: 200px 0; }
 }
 
+@keyframes favPop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+
 .panel {
   width: 420px;
   min-width: 420px;
@@ -43,6 +49,21 @@
 
 .favoritesToggle:hover {
   background: #f3f2ed;
+}
+
+.searchInput {
+  padding: 10px 12px;
+  background: #fafaf8;
+  border: 1px solid #eceae5;
+  border-radius: 10px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #211f1c;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: #4c5fd5;
 }
 
 .toggleTrack {
@@ -243,6 +264,11 @@
 
 .favButton:hover {
   background: #f0eee8;
+}
+
+.favIcon {
+  display: inline-block;
+  animation: favPop 0.25s ease;
 }
 
 .avatar {
