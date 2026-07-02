@@ -10,6 +10,7 @@ export default defineConfig({
     // for the deployed production origins).
     proxy: {
       '/health': 'http://localhost:4000',
+      '/pokemon': 'http://localhost:4000',
     },
   },
   test: {

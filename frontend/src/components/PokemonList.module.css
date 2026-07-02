@@ -1,0 +1,176 @@
+@keyframes shimmer {
+  0% { background-position: -200px 0; }
+  100% { background-position: 200px 0; }
+}
+
+.panel {
+  width: 420px;
+  min-width: 420px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border-right: 1px solid #ecead5;
+  border-right-color: #eceae5;
+  font-family: "Manrope", sans-serif;
+  color: #211f1c;
+}
+
+.header {
+  padding: 24px 20px 18px 20px;
+  border-bottom: 1px solid #eceae5;
+}
+
+.title {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.subtitle {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12px;
+  color: #8a877e;
+  margin-top: 3px;
+}
+
+.scrollArea {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px 0;
+}
+
+.skeletonRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+}
+
+.skeletonAvatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(90deg, #f1f0eb 25%, #f8f7f3 37%, #f1f0eb 63%);
+  background-size: 400px 100%;
+  animation: shimmer 1.3s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+.skeletonLines {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.skeletonLine {
+  height: 12px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #f1f0eb 25%, #f8f7f3 37%, #f1f0eb 63%);
+  background-size: 400px 100%;
+  animation: shimmer 1.3s ease-in-out infinite;
+}
+
+.errorBox {
+  margin: 24px 16px;
+  padding: 20px 16px;
+  border: 1px solid #f0d9d6;
+  background: #fdf6f5;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.errorIcon {
+  font-size: 26px;
+  line-height: 1;
+}
+
+.errorTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #8a3a34;
+  margin-top: 10px;
+}
+
+.errorMessage {
+  font-size: 13px;
+  color: #9c6b66;
+  margin-top: 4px;
+}
+
+.retryButton {
+  margin-top: 14px;
+  padding: 8px 18px;
+  border-radius: 8px;
+  border: 1px solid #d98d85;
+  background: #fff;
+  color: #8a3a34;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.retryButton:hover {
+  background: #fdf0ee;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 16px;
+  border-bottom: 1px solid #f3f2ee;
+}
+
+.avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #f5f4ef;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.sprite {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+}
+
+.info {
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #262420;
+}
+
+.number {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+  color: #9c998e;
+  margin-top: 2px;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
