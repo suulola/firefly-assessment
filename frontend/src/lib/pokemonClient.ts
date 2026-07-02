@@ -13,3 +13,26 @@ export async function getPokemonList(): Promise<PokemonListItem[]> {
   }
   return (await response.json()) as PokemonListItem[];
 }
+
+export interface EvolutionStage {
+  id: number;
+  name: string;
+  spriteUrl: string;
+}
+
+export interface PokemonDetail {
+  id: number;
+  name: string;
+  spriteUrl: string;
+  types: string[];
+  abilities: { name: string; hidden: boolean }[];
+  evolutions: EvolutionStage[];
+}
+
+export async function getPokemonDetail(id: number): Promise<PokemonDetail> {
+  const response = await fetch(`${BACKEND_BASE_URL}/pokemon/${id}`);
+  if (!response.ok) {
+    throw new Error("Failed to load this Pokémon.");
+  }
+  return (await response.json()) as PokemonDetail;
+}

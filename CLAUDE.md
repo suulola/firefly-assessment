@@ -41,12 +41,22 @@ Backend code is organized by domain under `src/modules/<name>/`, not by technica
 
 Current modules:
 - `modules/health` — liveness (`GET /health`) and a PokéAPI deep-reachability check (`GET /health/pokeapi`). Its service reuses `modules/pokemon/repository.ts` rather than calling PokéAPI itself — this is the pattern for cross-module reuse: import another module's `repository`/`service`, never its `route`.
-- `modules/pokemon` — `repository.ts` wraps the only PokéAPI HTTP client in the backend (`pokeApiGet`, `POKEAPI_BASE_URL`). Route/service land here as the Pokémon list and detail endpoints are built.
+- `modules/pokemon` — `repository.ts` wraps the only PokéAPI HTTP client in the backend (`pokeApiGet`, `POKEAPI_BASE_URL`). `service.ts`/`route.ts` implement `GET /pokemon` (first 150, list shape) and `GET /pokemon/:id` (types/abilities/flattened evolution chain).
 - `modules/favorites` — `repository.ts` is file-based JSON persistence (`createFileFavoritesStore`, backed by `backend/data/favorites.json`) behind a `read`/`write` interface, so the storage mechanism can change without touching callers. Not yet wired to a route.
 
 `src/app.ts` composes the Express app from module routers and exports it (unstarted) for testing; `src/server.ts` is the only place that calls `.listen()`.
 
 When adding backend functionality: create a new `src/modules/<name>/` folder following this pattern rather than adding to a flat `routes/` or `lib/` directory.
+
+## Backend error responses
+
+Every route that can fail (PokéAPI proxy failures, future favorites-storage failures) responds with the same envelope — **not** an ad hoc `{ error: string }` shape:
+
+```json
+{ "statusCode": 502, "message": "Failed to load the Pokémon list." }
+```
+
+`statusCode` is also the HTTP response status. `modules/pokemon/route.ts` has a small local `sendError(res, statusCode, message)` helper — reuse that pattern (or promote it to a shared helper only once a third module needs the same thing; two call sites in one file doesn't justify a new shared module yet). When writing the integration test for a new failing route, assert against `{ statusCode, message }`, not against whatever shape feels natural in the moment — this exact mismatch (a route-local `{ error }` shape drifting from the documented envelope) has already happened once in this repo.
 
 ## Testing seams
 

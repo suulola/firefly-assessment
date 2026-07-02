@@ -25,7 +25,7 @@ describe("PokemonList", () => {
       }),
     );
 
-    render(<PokemonList />);
+    render(<PokemonList selectedId={null} onSelect={() => {}} />);
 
     expect(await screen.findByRole("status")).toHaveTextContent(/loading/i);
   });
@@ -37,7 +37,7 @@ describe("PokemonList", () => {
       ),
     );
 
-    render(<PokemonList />);
+    render(<PokemonList selectedId={null} onSelect={() => {}} />);
 
     expect(
       screen.getByRole("heading", { name: /pokémon explorer/i }),
@@ -59,7 +59,7 @@ describe("PokemonList", () => {
       ),
     );
 
-    render(<PokemonList />);
+    render(<PokemonList selectedId={null} onSelect={() => {}} />);
 
     expect(
       await screen.findByText(/couldn't load pokémon/i),

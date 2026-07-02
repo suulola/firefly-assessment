@@ -127,7 +127,21 @@
   align-items: center;
   gap: 12px;
   padding: 9px 16px;
+  border: none;
   border-bottom: 1px solid #f3f2ee;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.row:hover {
+  background: #f6f5f1;
+}
+
+.rowSelected,
+.rowSelected:hover {
+  background: rgba(76, 95, 213, 0.12);
 }
 
 .avatar {

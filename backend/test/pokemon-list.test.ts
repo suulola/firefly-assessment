@@ -46,7 +46,8 @@ describe("GET /pokemon", () => {
 
     expect(response.status).toBe(502);
     expect(response.body).toEqual({
-      error: "Failed to load the Pokémon list.",
+      statusCode: 502,
+      message: "Failed to load the Pokémon list.",
     });
   });
 });
