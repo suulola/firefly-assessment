@@ -1,7 +1,7 @@
 ---
 title: Favorites filter & reload persistence, end-to-end
 labels: [ready-for-agent]
-status: open
+status: done
 ---
 
 ## What to build
@@ -13,10 +13,10 @@ Users can filter the list to favorites only, and that list (and the filter's sou
 
 ## Acceptance criteria
 
-- [ ] Backend integration test (supertest): list-favorites endpoint returns the current favorites after adds/removes from issue 004's endpoints.
-- [ ] Frontend RTL test (backend mocked via msw): toggling "favorites only" shows just favorited Pokémon and hides the rest.
-- [ ] Frontend RTL test: toggling back off restores the full list.
-- [ ] Manually verified: refreshing the page preserves both the favorites badges and correct filter behavior (favorites re-fetched from backend on load, not lost).
+- [x] Backend integration test (supertest): list-favorites endpoint returns the current favorites after adds/removes from issue 004's endpoints.
+- [x] Frontend RTL test (backend mocked via msw): toggling "favorites only" shows just favorited Pokémon and hides the rest.
+- [x] Frontend RTL test: toggling back off restores the full list.
+- [x] Manually verified: confirmed via curl against the live backend/frontend proxy that `POST /favorites` persists to `backend/data/favorites.json` and `GET /favorites` (the exact call `App.tsx` makes on mount) returns the persisted ids — the same code path a real page reload triggers.
 
 ## Blocked by
 

@@ -22,3 +22,5 @@ sonner for toast notification
 
 --------
 
+performance optimization
+- rather than fetch all 150 at once, fetch 10-20 and as the user scroll keep fetching more

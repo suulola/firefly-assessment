@@ -13,12 +13,12 @@ The first full vertical slice: browsing the first 150 Pokémon, backend to UI.
 
 ## Acceptance criteria
 
-- [ ] Backend integration test (supertest, PokéAPI mocked): list endpoint returns 150 items with the expected shape.
-- [ ] Backend integration test: a mocked PokéAPI failure produces the backend's standard error envelope, not a raw passthrough or a 500 with no body.
-- [ ] Frontend RTL test (backend mocked via msw): list renders 150 items with name, sprite, and number visible.
-- [ ] Frontend RTL test: a loading indicator is shown while the request is in flight.
-- [ ] Frontend RTL test: a clear error message is shown when the backend call fails.
-- [ ] Manually verified: list is scrollable in a real browser.
+- [x] Backend integration test (supertest, PokéAPI mocked): list endpoint returns 150 items with the expected shape.
+- [x] Backend integration test: a mocked PokéAPI failure produces the backend's standard error envelope, not a raw passthrough or a 500 with no body.
+- [x] Frontend RTL test (backend mocked via msw): list renders 150 items with name, sprite, and number visible.
+- [x] Frontend RTL test: a loading indicator is shown while the request is in flight.
+- [x] Frontend RTL test: a clear error message is shown when the backend call fails.
+- [ ] Manually verified: list is scrollable in a real browser. **Not done** — verified instead via curl through the live proxy (150 real items reach the DOM) and the CSS (`flex: 1; overflow-y: auto` on a fixed-height panel, a standard scroll pattern) but no live browser/screenshot check was performed for this issue.
 
 ## Blocked by
 

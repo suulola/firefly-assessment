@@ -19,6 +19,72 @@
 .header {
   padding: 24px 20px 18px 20px;
   border-bottom: 1px solid #eceae5;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.favoritesToggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #fafaf8;
+  border: 1px solid #eceae5;
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 600;
+  color: #48453d;
+  font-family: inherit;
+}
+
+.favoritesToggle:hover {
+  background: #f3f2ed;
+}
+
+.toggleTrack {
+  width: 40px;
+  height: 22px;
+  border-radius: 11px;
+  position: relative;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.toggleKnob {
+  position: absolute;
+  top: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  transition: left 0.15s;
+}
+
+.emptyFavorites {
+  margin: 40px 24px;
+  text-align: center;
+  color: #9c998e;
+}
+
+.emptyFavoritesIcon {
+  font-size: 28px;
+}
+
+.emptyFavoritesTitle {
+  font-size: 14px;
+  font-weight: 600;
+  margin-top: 10px;
+  color: #5b584f;
+}
+
+.emptyFavoritesSubtitle {
+  font-size: 13px;
+  margin-top: 4px;
 }
 
 .title {

@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PokemonList } from "./components/PokemonList";
 import { PokemonDetail } from "./components/PokemonDetail";
 import { Toast } from "./components/Toast";
-import { addFavorite, removeFavorite } from "./lib/pokemonClient";
+import { addFavorite, getFavorites, removeFavorite } from "./lib/pokemonClient";
 import styles from "./App.module.css";
 
 const TOAST_DURATION_MS = 2000;
@@ -11,6 +11,15 @@ export function App() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [favoriteIds, setFavoriteIds] = useState<Set<number>>(new Set());
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    getFavorites()
+      .then((ids) => setFavoriteIds(new Set(ids)))
+      .catch(() => {
+        // Badges/filter just stay empty until the next successful load —
+        // the list itself still works without favorites data.
+      });
+  }, []);
 
   function showToast(message: string) {
     setToastMessage(message);

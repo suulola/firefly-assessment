@@ -56,3 +56,11 @@ export async function removeFavorite(id: number): Promise<void> {
     throw new Error("Failed to remove this favorite.");
   }
 }
+
+export async function getFavorites(): Promise<number[]> {
+  const response = await fetch(`${BACKEND_BASE_URL}/favorites`);
+  if (!response.ok) {
+    throw new Error("Failed to load favorites.");
+  }
+  return (await response.json()) as number[];
+}

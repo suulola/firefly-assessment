@@ -13,14 +13,14 @@ Users can mark/unmark a Pokémon as a favorite, persisted through the backend.
 
 ## Acceptance criteria
 
-- [ ] Backend integration test (supertest): adding a favorite persists it (verified via storage or the list-favorites read path stubbed in issue 001).
-- [ ] Backend integration test: adding an already-favorited Pokémon is idempotent (no error, no duplicate).
-- [ ] Backend integration test: removing a favorite persists the removal.
-- [ ] Backend integration test: removing a non-favorited Pokémon is idempotent (no error).
-- [ ] Backend integration test: favorites survive a process restart (read back from the file store on a fresh app instance in the test).
-- [ ] Frontend RTL test (backend mocked via msw): toggling favorite updates the UI immediately (optimistic).
-- [ ] Frontend RTL test: a failed toggle call rolls back the UI change and shows an inline error.
-- [ ] Frontend RTL test: favorited Pokémon show a visible badge/icon in the list.
+- [x] Backend integration test (supertest): adding a favorite persists it (verified via storage or the list-favorites read path stubbed in issue 001).
+- [x] Backend integration test: adding an already-favorited Pokémon is idempotent (no error, no duplicate).
+- [x] Backend integration test: removing a favorite persists the removal.
+- [x] Backend integration test: removing a non-favorited Pokémon is idempotent (no error).
+- [x] Backend integration test: favorites survive a process restart (read back from the file store on a fresh app instance in the test).
+- [x] Frontend RTL test (backend mocked via msw): toggling favorite updates the UI immediately (optimistic).
+- [x] Frontend RTL test: a failed toggle call rolls back the UI change and shows an inline error. (Implemented as a bottom-of-screen toast per the design file, not a per-row inline message — same rollback-and-notify behavior, different placement.)
+- [x] Frontend RTL test: favorited Pokémon show a visible badge/icon in the list.
 
 ## Blocked by
 

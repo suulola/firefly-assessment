@@ -22,6 +22,7 @@ export function PokemonList({
 }: PokemonListProps) {
   const [status, setStatus] = useState<Status>("loading");
   const [items, setItems] = useState<PokemonListItem[]>([]);
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
 
   function load() {
     setStatus("loading");
@@ -35,13 +36,38 @@ export function PokemonList({
 
   useEffect(load, []);
 
+  const visibleItems = favoritesOnly
+    ? items.filter((item) => favoriteIds.has(item.id))
+    : items;
+
   return (
     <div className={styles.panel}>
       <div className={styles.header}>
-        <h1 className={styles.title}>Pokémon Explorer</h1>
-        <div className={styles.subtitle}>
-          {status === "ready" ? `${items.length} Pokémon` : " "}
+        <div>
+          <h1 className={styles.title}>Pokémon Explorer</h1>
+          <div className={styles.subtitle}>
+            {status === "ready"
+              ? `${items.length} Pokémon · ${favoriteIds.size} favorited`
+              : " "}
+          </div>
         </div>
+        <button
+          type="button"
+          className={styles.favoritesToggle}
+          aria-pressed={favoritesOnly}
+          onClick={() => setFavoritesOnly((prev) => !prev)}
+        >
+          <span>Favorites only</span>
+          <span
+            className={styles.toggleTrack}
+            style={{ background: favoritesOnly ? "#4c5fd5" : "#dedcd6" }}
+          >
+            <span
+              className={styles.toggleKnob}
+              style={{ left: favoritesOnly ? 20 : 2 }}
+            />
+          </span>
+        </button>
       </div>
 
       <div className={styles.scrollArea}>
@@ -73,9 +99,19 @@ export function PokemonList({
           </div>
         )}
 
-        {status === "ready" && (
+        {status === "ready" && favoritesOnly && visibleItems.length === 0 && (
+          <div className={styles.emptyFavorites}>
+            <div className={styles.emptyFavoritesIcon}>☆</div>
+            <div className={styles.emptyFavoritesTitle}>No favorites yet</div>
+            <div className={styles.emptyFavoritesSubtitle}>
+              Star a Pokémon to add it here.
+            </div>
+          </div>
+        )}
+
+        {status === "ready" && !(favoritesOnly && visibleItems.length === 0) && (
           <ul className={styles.list}>
-            {items.map((item) => {
+            {visibleItems.map((item) => {
               const displayName = formatName(item.name);
               const selected = item.id === selectedId;
               const isFavorited = favoriteIds.has(item.id);

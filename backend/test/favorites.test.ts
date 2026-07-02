@@ -80,4 +80,22 @@ describe("favorites", () => {
     const response = await request(appAfterRestart).delete("/favorites/25");
     expect(response.status).toBe(204);
   });
+
+  it("GET /favorites reflects adds and removes made through the add/remove endpoints", async () => {
+    const storePath = await tempStorePath();
+    const app = createApp({ favoritesStorePath: storePath });
+
+    await request(app).post("/favorites").send({ id: 25 });
+    await request(app).post("/favorites").send({ id: 6 });
+
+    const afterAdds = await request(app).get("/favorites");
+    expect(afterAdds.status).toBe(200);
+    expect(afterAdds.body).toEqual([25, 6]);
+
+    await request(app).delete("/favorites/25");
+
+    const afterRemove = await request(app).get("/favorites");
+    expect(afterRemove.status).toBe(200);
+    expect(afterRemove.body).toEqual([6]);
+  });
 });

@@ -11,3 +11,7 @@ export async function removeFavorite(store: FavoritesStore, id: number): Promise
   const current = await store.read();
   await store.write(current.filter((existing) => existing !== id));
 }
+
+export function listFavorites(store: FavoritesStore): Promise<number[]> {
+  return store.read();
+}
