@@ -5,7 +5,6 @@ interface ErrorBoundaryProps {
   children: ReactNode;
   fallback: (error: Error, reset: () => void) => ReactNode;
   onReset?: () => void;
-  /** Identifies which boundary caught the error, e.g. "PokemonList panel". */
   source?: string;
 }
 

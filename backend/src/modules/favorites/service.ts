@@ -10,9 +10,7 @@ async function runSerializedMutation(
   const next = previous.then(mutation, mutation);
   mutationQueues.set(
     store,
-    next.catch(() => {
-      // Keep the queue usable after a failed mutation.
-    }),
+    next.catch(() => {}),
   );
   return next;
 }

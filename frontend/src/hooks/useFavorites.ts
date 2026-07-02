@@ -47,8 +47,6 @@ export function useFavorites() {
     [favoritesQuery.data],
   );
 
-  // The mutation cache is the one source for "is this id pending" — no more
-  // ref+state pair kept in sync by hand across onMutate/mutationFn/onSettled.
   const pendingIds = useMutationState({
     filters: { mutationKey: favoriteKeys.toggleMutation, status: "pending" },
     select: (mutation) => (mutation.state.variables as ToggleFavoriteVariables).id,
@@ -68,10 +66,6 @@ export function useFavorites() {
     mutationKey: favoriteKeys.toggleMutation,
     meta: { suppressGlobalErrorReport: true },
     mutationFn: async ({ id }: ToggleFavoriteVariables) => {
-      // mutationFn runs after onMutate has already flipped the cache
-      // optimistically, so the pre-click direction can't be re-derived from
-      // the cache here — read it off this mutation's own context (set by
-      // onMutate) in the mutation cache instead of a hand-rolled ref.
       const mutation = queryClient
         .getMutationCache()
         .find<unknown, unknown, ToggleFavoriteVariables, ToggleFavoriteContext>(
@@ -86,9 +80,6 @@ export function useFavorites() {
       clearFavoriteError(id);
       await queryClient.cancelQueries({ queryKey: favoriteKeys.all });
 
-      // Derive from the cache, not from a `wasFavorited` value captured by
-      // the caller's stale render — that's what let rapid clicks toggle the
-      // same id twice in the wrong direction.
       const previousIds = queryClient.getQueryData<number[]>(favoriteKeys.all) ?? [];
       const wasFavorited = previousIds.includes(id);
 
@@ -123,9 +114,6 @@ export function useFavorites() {
   });
 
   function toggleFavorite(id: number) {
-    // Synchronous read against the live mutation cache (not React render
-    // state) — a rapid second click sees the first mutation's pending entry
-    // immediately, with no dependency on a re-render having happened yet.
     const alreadyPending = queryClient.isMutating(pendingMutationFilter(id)) > 0;
     if (alreadyPending) return;
     favoriteMutation.mutate({ id });

@@ -24,10 +24,6 @@ function PokemonExplorer() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const { favoriteIds, favoriteErrors, toggleFavorite, isFavoritePending } = useFavorites();
 
-  // Below the mobile breakpoint only one pane is visible at a time (see the
-  // [data-mobile-view] rules in App.module.scss and each panel's own CSS
-  // module) — this attribute is what those rules key off of. Above the
-  // breakpoint both panes are always shown side by side and this is unused.
   const mobileView = selectedId === null ? "list" : "detail";
 
   return (

@@ -1,9 +1,6 @@
 import { z, type ZodType } from "zod";
 import { reportError } from "@/lib/observability";
 
-// Schemas for the *unwrapped* `data` payload only — the envelope itself
-// ({ success, data, message }) is readApiResponse's concern, not this file's.
-
 export const pokemonListItemSchema = z.object({
   id: z.number(),
   name: z.string(),
@@ -44,11 +41,6 @@ export const favoriteMutationResponseSchema = z.object({
   id: z.number(),
 });
 
-// The envelope already came back well-formed (readApiResponse's job) — this
-// validates that the `data` it carried actually matches the shape a service
-// promises its callers. A mismatch here means the backend and frontend have
-// drifted out of sync, which is a bug worth surfacing distinctly from an
-// ordinary network/HTTP failure.
 export function parsePayload<T>(
   schema: ZodType<T>,
   data: unknown,

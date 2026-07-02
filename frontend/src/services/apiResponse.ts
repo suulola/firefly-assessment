@@ -39,10 +39,6 @@ export async function readApiResponse<T>(
   try {
     body = await response.json();
   } catch (error) {
-    // The backend's own contract (successResponse/errorResponse) guarantees
-    // JSON — a body that doesn't parse at all means something between the
-    // backend and here (proxy, malformed error page, etc.) broke that
-    // contract. Worth reporting distinctly from an ordinary HTTP failure.
     reportError(error, { source, action: "parse-envelope", extra: { status: response.status } });
     throw new Error(fallbackMessage, { cause: error });
   }
@@ -58,9 +54,6 @@ export async function readApiResponse<T>(
   }
 
   if (!response.ok || !body.success) {
-    // An expected, user-facing failure (backend rejected the request, or
-    // returned a proper error envelope) — not a code-level bug, so this
-    // doesn't get reported. Callers render it inline.
     throw new Error(body.message || fallbackMessage);
   }
 

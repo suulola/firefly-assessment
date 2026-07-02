@@ -5,10 +5,6 @@ import { fileURLToPath } from "node:url";
 import { randomUUID } from "node:crypto";
 import type { FavoritesStore } from "@/modules/favorites/types.js";
 
-// Data-access layer for the favorites module: file-based JSON storage
-// behind a read/write interface, so the storage mechanism can be swapped
-// later without touching the service or route layers.
-
 const DEFAULT_STORE_PATH = fileURLToPath(
   new URL("../../../data/favorites.json", import.meta.url),
 );

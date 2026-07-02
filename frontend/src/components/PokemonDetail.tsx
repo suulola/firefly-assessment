@@ -121,12 +121,6 @@ export function PokemonDetail({
               <div className={styles.pillRow}>
                 {detail.types.map((type) => {
                   const { color, background } = colorForType(type);
-                  // Genuinely per-instance dynamic (colorForType has no
-                  // fixed, enumerable set of CSS variants — every Pokémon
-                  // type gets its own color) — a CSS custom property would
-                  // only trade this inline style for an `as React.CSSProperties`
-                  // cast to smuggle "--type-color" past CSSProperties' typing,
-                  // without removing the dynamism. Kept inline; see CLAUDE.md.
                   return (
                     <span
                       key={type}

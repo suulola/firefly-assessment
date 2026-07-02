@@ -6,10 +6,6 @@ import styles from "./PokemonList.module.scss";
 
 const SKELETON_ROWS = Array.from({ length: 9 }, (_, i) => i);
 const LOAD_MORE_THRESHOLD_PX = 200;
-// Matches the row's rendered height (44px avatar + 9px top/bottom padding +
-// 1px border). Used as both the virtualizer's size estimate and its jsdom
-// fallback (see the `measureElement` override below) — real browsers still
-// remeasure dynamically, this is just what's assumed until then.
 const ROW_HEIGHT_PX = 63;
 
 interface PokemonListProps {
@@ -50,8 +46,6 @@ export function PokemonList({
     getScrollElement: () => scrollAreaRef.current,
     estimateSize: () => ROW_HEIGHT_PX,
     overscan: 6,
-    // jsdom (tests) reports 0 for getBoundingClientRect() — fall back to the
-    // estimate rather than collapsing every row to zero height there.
     measureElement: (el) => el.getBoundingClientRect().height || ROW_HEIGHT_PX,
   });
 

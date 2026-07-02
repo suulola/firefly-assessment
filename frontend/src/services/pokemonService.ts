@@ -9,8 +9,6 @@ import {
   evolutionStageSchema,
 } from "@/services/schemas";
 
-// Types are inferred from the Zod schemas (the source of truth for shape)
-// rather than hand-duplicated — schemas.ts and these types can't drift apart.
 export type PokemonListItem = z.infer<typeof pokemonListItemSchema>;
 export type PokemonListPage = z.infer<typeof pokemonListPageSchema>;
 

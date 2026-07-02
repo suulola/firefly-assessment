@@ -1,14 +1,6 @@
-// Client error-reporting boundary. Nothing else in the app should call
-// console.error directly for an unexpected failure — go through here instead,
-// so swapping in Sentry/Datadog/etc. later is a one-file change (replace the
-// sink, keep every call site as-is).
-
 export interface ErrorReportContext {
-  /** Component or module the error originated in, e.g. "ErrorBoundary", "useFavorites". */
   source: string;
-  /** The query/mutation/action name, e.g. "toggleFavorite", "pokemon.list". */
   action?: string;
-  /** Not populated yet — reserved for a backend-issued request id once the API sends one. */
   requestId?: string;
   extra?: Record<string, unknown>;
 }
@@ -20,19 +12,14 @@ const consoleSink: ErrorSink = (error, context) => {
   console.error(`[${label}]`, error, context.extra ?? {});
 };
 
-// A no-op default keeps test output quiet without every test having to
-// remember to mock console.error; tests that specifically want to assert
-// reporting happened can call setErrorSink(vi.fn()) and check it directly.
 const noopSink: ErrorSink = () => {};
 
 let sink: ErrorSink = import.meta.env.MODE === "test" ? noopSink : consoleSink;
 
-/** Swap the reporting sink — plug in Sentry/Datadog here, or a spy in tests. */
 export function setErrorSink(nextSink: ErrorSink): void {
   sink = nextSink;
 }
 
-/** Restore the environment-appropriate default sink (console in dev/prod, no-op in test). */
 export function resetErrorSink(): void {
   sink = import.meta.env.MODE === "test" ? noopSink : consoleSink;
 }

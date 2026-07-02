@@ -9,10 +9,6 @@ interface QueryErrorBoundaryProps {
   className?: string;
 }
 
-// Pairs a render-crash ErrorBoundary with React Query's reset coordination:
-// retrying from the fallback also clears any query error state the crash
-// may have been caused by, so the retried render doesn't immediately
-// re-throw from stale cached error state.
 export function QueryErrorBoundary({ children, title, className }: QueryErrorBoundaryProps) {
   return (
     <QueryErrorResetBoundary>
