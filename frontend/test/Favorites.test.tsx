@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { App } from "../src/App";
@@ -34,17 +34,27 @@ describe("Favorites: toggling a Pokémon as favorite", () => {
     expect(favButton).toHaveAttribute("aria-pressed", "true");
   });
 
-  it("rolls back and shows an error message when the backend call fails", async () => {
+  it("rolls back and shows an inline error next to the affected row when the backend call fails", async () => {
     mswServer.use(
       http.post(`${BACKEND_BASE_URL}/favorites`, () => new HttpResponse(null, { status: 502 })),
     );
     await renderReadyList();
 
     const favButton = screen.getByRole("button", { name: /toggle favorite.*bulbasaur/i });
+    const row = favButton.closest("li");
+    expect(row).not.toBeNull();
     await userEvent.click(favButton);
 
-    expect(await screen.findByText(/couldn't save/i)).toBeInTheDocument();
+    expect(await within(row as HTMLElement).findByRole("alert")).toHaveTextContent(
+      /couldn't save/i,
+    );
     expect(favButton).toHaveAttribute("aria-pressed", "false");
+
+    // The other row's favorite control has no error of its own.
+    const otherFavButton = screen.getByRole("button", { name: /toggle favorite.*ivysaur/i });
+    const otherRow = otherFavButton.closest("li");
+    expect(otherRow).not.toBeNull();
+    expect(within(otherRow as HTMLElement).queryByRole("alert")).not.toBeInTheDocument();
   });
 
   it("shows a visible badge/icon for favorited Pokémon in the list", async () => {

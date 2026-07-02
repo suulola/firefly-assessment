@@ -10,6 +10,7 @@ interface PokemonDetailProps {
   pokemonId: number | null;
   onSelect: (id: number) => void;
   favoriteIds: Set<number>;
+  favoriteErrors: Record<number, string>;
   onToggleFavorite: (id: number) => void;
 }
 
@@ -17,6 +18,7 @@ export function PokemonDetail({
   pokemonId,
   onSelect,
   favoriteIds,
+  favoriteErrors,
   onToggleFavorite,
 }: PokemonDetailProps) {
   const [status, setStatus] = useState<Status>("loading");
@@ -113,6 +115,11 @@ export function PokemonDetail({
                 </span>
               </button>
             </div>
+            {favoriteErrors[detail.id] && (
+              <div role="alert" className={styles.favError}>
+                {favoriteErrors[detail.id]}
+              </div>
+            )}
 
             <div className={styles.section}>
               <div className={styles.sectionLabel}>Types</div>

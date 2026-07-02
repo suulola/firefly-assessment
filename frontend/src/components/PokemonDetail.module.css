@@ -143,6 +143,12 @@
   gap: 22px;
 }
 
+.favError {
+  margin-top: 10px;
+  font-size: 13px;
+  color: #8a3a34;
+}
+
 .favButton {
   display: flex;
   align-items: center;

@@ -11,6 +11,7 @@ interface PokemonListProps {
   selectedId: number | null;
   onSelect: (id: number) => void;
   favoriteIds: Set<number>;
+  favoriteErrors: Record<number, string>;
   onToggleFavorite: (id: number) => void;
 }
 
@@ -18,6 +19,7 @@ export function PokemonList({
   selectedId,
   onSelect,
   favoriteIds,
+  favoriteErrors,
   onToggleFavorite,
 }: PokemonListProps) {
   const [status, setStatus] = useState<Status>("loading");
@@ -147,6 +149,11 @@ export function PokemonList({
                       {isFavorited ? "★" : "☆"}
                     </button>
                   </div>
+                  {favoriteErrors[item.id] && (
+                    <div role="alert" className={styles.favError}>
+                      {favoriteErrors[item.id]}
+                    </div>
+                  )}
                 </li>
               );
             })}

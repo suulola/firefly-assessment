@@ -19,7 +19,7 @@ Users can mark/unmark a Pokémon as a favorite, persisted through the backend.
 - [x] Backend integration test: removing a non-favorited Pokémon is idempotent (no error).
 - [x] Backend integration test: favorites survive a process restart (read back from the file store on a fresh app instance in the test).
 - [x] Frontend RTL test (backend mocked via msw): toggling favorite updates the UI immediately (optimistic).
-- [x] Frontend RTL test: a failed toggle call rolls back the UI change and shows an inline error. (Implemented as a bottom-of-screen toast per the design file, not a per-row inline message — same rollback-and-notify behavior, different placement.)
+- [x] Frontend RTL test: a failed toggle call rolls back the UI change and shows an inline error. (Rendered next to the affected list row and/or the detail panel's favorite control — scoped per-Pokémon, not a global notification. Superseded the earlier global-toast implementation.)
 - [x] Frontend RTL test: favorited Pokémon show a visible badge/icon in the list.
 
 ## Blocked by

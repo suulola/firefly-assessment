@@ -1,16 +1,13 @@
 import { useEffect, useState } from "react";
 import { PokemonList } from "./components/PokemonList";
 import { PokemonDetail } from "./components/PokemonDetail";
-import { Toast } from "./components/Toast";
 import { addFavorite, getFavorites, removeFavorite } from "./lib/pokemonClient";
 import styles from "./App.module.css";
-
-const TOAST_DURATION_MS = 2000;
 
 export function App() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [favoriteIds, setFavoriteIds] = useState<Set<number>>(new Set());
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [favoriteErrors, setFavoriteErrors] = useState<Record<number, string>>({});
 
   useEffect(() => {
     getFavorites()
@@ -21,13 +18,20 @@ export function App() {
       });
   }, []);
 
-  function showToast(message: string) {
-    setToastMessage(message);
-    setTimeout(() => setToastMessage(null), TOAST_DURATION_MS);
+  function clearFavoriteError(id: number) {
+    setFavoriteErrors((prev) => {
+      if (!(id in prev)) return prev;
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
   }
 
   async function toggleFavorite(id: number) {
     const wasFavorited = favoriteIds.has(id);
+
+    // A new toggle attempt supersedes any error left over from a previous one.
+    clearFavoriteError(id);
 
     setFavoriteIds((prev) => {
       const next = new Set(prev);
@@ -46,7 +50,7 @@ export function App() {
         else next.delete(id);
         return next;
       });
-      showToast("Couldn't save — try again.");
+      setFavoriteErrors((prev) => ({ ...prev, [id]: "Couldn't save. Try again." }));
     }
   }
 
@@ -56,15 +60,16 @@ export function App() {
         selectedId={selectedId}
         onSelect={setSelectedId}
         favoriteIds={favoriteIds}
+        favoriteErrors={favoriteErrors}
         onToggleFavorite={toggleFavorite}
       />
       <PokemonDetail
         pokemonId={selectedId}
         onSelect={setSelectedId}
         favoriteIds={favoriteIds}
+        favoriteErrors={favoriteErrors}
         onToggleFavorite={toggleFavorite}
       />
-      {toastMessage && <Toast message={toastMessage} />}
     </div>
   );
 }
