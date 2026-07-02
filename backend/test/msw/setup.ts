@@ -1,5 +1,6 @@
 import { afterAll, afterEach, beforeAll } from "vitest";
 import { mswServer } from "./server.js";
+import { clearPokeApiCache } from "@/modules/pokemon/repository.js";
 
 beforeAll(() =>
   mswServer.listen({
@@ -12,5 +13,8 @@ beforeAll(() =>
     },
   }),
 );
-afterEach(() => mswServer.resetHandlers());
+afterEach(() => {
+  clearPokeApiCache();
+  mswServer.resetHandlers();
+});
 afterAll(() => mswServer.close());

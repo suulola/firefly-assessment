@@ -1,7 +1,24 @@
-import { app } from "./app.js";
+import { app } from "@/app.js";
+import { loadConfig } from "@/config.js";
+import { logger } from "@/logger.js";
 
-const port = process.env.PORT ? Number(process.env.PORT) : 4000;
+const config = loadConfig();
 
-app.listen(port, () => {
-  console.log(`backend listening on http://localhost:${port}`);
+const server = app.listen(config.port, () => {
+  logger.info("server_started", { port: config.port });
 });
+
+function shutdown(signal: "SIGTERM" | "SIGINT") {
+  logger.info("server_shutdown_started", { signal });
+  server.close((error) => {
+    if (error) {
+      logger.error("server_shutdown_failed", { signal, error: error.message });
+      process.exit(1);
+    }
+    logger.info("server_shutdown_complete", { signal });
+    process.exit(0);
+  });
+}
+
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));

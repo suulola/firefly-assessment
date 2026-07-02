@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import request from "supertest";
-import { createApp } from "../src/app.js";
+import { createApp } from "@/app.js";
 
 describe("CORS", () => {
   it("allows the Vite dev server origin by default when CORS_ORIGIN is unset", async () => {

@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { http, HttpResponse } from "msw";
 import request from "supertest";
-import { app } from "../src/app.js";
+import { app } from "@/app.js";
 import { mswServer } from "./msw/server.js";
-import { POKEAPI_BASE_URL } from "../src/modules/pokemon/repository.js";
+import { POKEAPI_BASE_URL } from "@/modules/pokemon/repository.js";
 
 function mockPokemon(id: number, name: string) {
   return {
@@ -65,6 +65,9 @@ describe("GET /pokemon/:id", () => {
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({
+      success: true,
+      message: "Pokémon loaded.",
+      data: {
       id: 1,
       name: "bulbasaur",
       spriteUrl:
@@ -79,6 +82,7 @@ describe("GET /pokemon/:id", () => {
         { id: 2, name: "ivysaur", spriteUrl: expect.stringContaining("/2.png") },
         { id: 3, name: "venusaur", spriteUrl: expect.stringContaining("/3.png") },
       ],
+      },
     });
   });
 
@@ -112,7 +116,7 @@ describe("GET /pokemon/:id", () => {
     const response = await request(app).get("/pokemon/133");
 
     expect(response.status).toBe(200);
-    expect(response.body.evolutions.map((e: { name: string }) => e.name)).toEqual([
+    expect(response.body.data.evolutions.map((e: { name: string }) => e.name)).toEqual([
       "eevee",
       "vaporeon",
       "jolteon",
@@ -129,7 +133,7 @@ describe("GET /pokemon/:id", () => {
     const response = await request(app).get("/pokemon/143");
 
     expect(response.status).toBe(200);
-    expect(response.body.evolutions).toEqual([]);
+    expect(response.body.data.evolutions).toEqual([]);
   });
 
   it("returns the backend's error envelope when the PokéAPI call fails", async () => {
@@ -141,9 +145,12 @@ describe("GET /pokemon/:id", () => {
     const response = await request(app).get("/pokemon/1");
 
     expect(response.status).toBe(502);
-    expect(response.body).toEqual({
-      statusCode: 502,
+    expect(response.body).toMatchObject({
+      success: false,
+      data: null,
       message: "Failed to load this Pokémon.",
+      code: "POKEAPI_UNAVAILABLE",
     });
+    expect(response.body.requestId).toEqual(expect.any(String));
   });
 });

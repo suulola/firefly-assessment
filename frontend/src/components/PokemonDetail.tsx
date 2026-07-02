@@ -1,52 +1,39 @@
-import { useEffect, useRef, useState } from "react";
-import { getPokemonDetail, type PokemonDetail as PokemonDetailData } from "../lib/pokemonClient";
-import { formatName, numberLabel } from "../lib/pokemonFormat";
-import { colorForType } from "../lib/typeColors";
-import styles from "./PokemonDetail.module.css";
-
-type Status = "loading" | "ready" | "error";
+import { usePokemonDetail } from "@/hooks/usePokemonDetail";
+import { formatName, numberLabel } from "@/lib/pokemonFormat";
+import { colorForType } from "@/lib/typeColors";
+import styles from "./PokemonDetail.module.scss";
 
 interface PokemonDetailProps {
   pokemonId: number | null;
   onSelect: (id: number) => void;
+  onBack: () => void;
   favoriteIds: Set<number>;
   favoriteErrors: Record<number, string>;
   onToggleFavorite: (id: number) => void;
+  isFavoritePending: (id: number) => boolean;
 }
 
 export function PokemonDetail({
   pokemonId,
   onSelect,
+  onBack,
   favoriteIds,
   favoriteErrors,
   onToggleFavorite,
+  isFavoritePending,
 }: PokemonDetailProps) {
-  const [status, setStatus] = useState<Status>("loading");
-  const [detail, setDetail] = useState<PokemonDetailData | null>(null);
-  const requestIdRef = useRef<number | null>(null);
+  const detailQuery = usePokemonDetail(pokemonId);
 
-  function load(id: number) {
-    requestIdRef.current = id;
-    setStatus("loading");
-    getPokemonDetail(id)
-      .then((data) => {
-        if (requestIdRef.current !== id) return; // a newer selection superseded this request
-        setDetail(data);
-        setStatus("ready");
-      })
-      .catch(() => {
-        if (requestIdRef.current !== id) return;
-        setStatus("error");
-      });
-  }
-
-  useEffect(() => {
-    if (pokemonId != null) load(pokemonId);
-  }, [pokemonId]);
+  const status = detailQuery.isPending
+    ? "loading"
+    : detailQuery.isError
+      ? "error"
+      : "ready";
+  const detail = detailQuery.data ?? null;
 
   if (pokemonId == null) {
     return (
-      <div className={styles.panel}>
+      <main className={styles.panel} aria-label="Pokémon detail">
         <div className={styles.empty}>
           <div className={styles.emptyRing} />
           <div className={styles.emptyTitle}>Select a Pokémon to see details</div>
@@ -54,12 +41,15 @@ export function PokemonDetail({
             Abilities, types, and evolution line will appear here.
           </div>
         </div>
-      </div>
+      </main>
     );
   }
 
   return (
-    <div className={styles.panel}>
+    <main className={styles.panel} aria-label="Pokémon detail">
+      <button type="button" className={styles.backButton} onClick={onBack}>
+        ← Back to list
+      </button>
       <div className={styles.content}>
         {status === "loading" && (
           <div role="status" aria-label="Loading Pokémon detail">
@@ -81,7 +71,7 @@ export function PokemonDetail({
             <div className={styles.errorMessage}>
               Something went wrong loading this Pokémon.
             </div>
-            <button className={styles.retryButton} onClick={() => load(pokemonId)}>
+            <button className={styles.retryButton} onClick={() => detailQuery.refetch()}>
               Retry
             </button>
           </div>
@@ -97,14 +87,16 @@ export function PokemonDetail({
                   alt={formatName(detail.name)}
                 />
               </div>
-              <div style={{ flex: 1 }}>
+              <div className={styles.identity}>
                 <div className={styles.number}>{numberLabel(detail.id)}</div>
-                <div className={styles.name}>{formatName(detail.name)}</div>
+                <h2 className={styles.name}>{formatName(detail.name)}</h2>
               </div>
               <button
                 type="button"
                 className={styles.favButton}
                 aria-pressed={favoriteIds.has(detail.id)}
+                aria-busy={isFavoritePending(detail.id)}
+                disabled={isFavoritePending(detail.id)}
                 onClick={() => onToggleFavorite(detail.id)}
               >
                 <span
@@ -125,7 +117,7 @@ export function PokemonDetail({
             )}
 
             <div className={styles.section}>
-              <div className={styles.sectionLabel}>Types</div>
+              <h3 className={styles.sectionLabel}>Types</h3>
               <div className={styles.pillRow}>
                 {detail.types.map((type) => {
                   const { color, background } = colorForType(type);
@@ -143,7 +135,7 @@ export function PokemonDetail({
             </div>
 
             <div className={styles.section}>
-              <div className={styles.sectionLabel}>Abilities</div>
+              <h3 className={styles.sectionLabel}>Abilities</h3>
               <div className={styles.pillRow}>
                 {detail.abilities.map((ability) => (
                   <span key={ability.name} className={styles.abilityPill}>
@@ -157,7 +149,7 @@ export function PokemonDetail({
             </div>
 
             <div className={styles.section}>
-              <div className={styles.sectionLabel}>Evolution line</div>
+              <h3 className={styles.sectionLabel}>Evolution line</h3>
               {detail.evolutions.length > 1 ? (
                 <div className={styles.evoRow}>
                   {detail.evolutions.map((stage, idx) => (
@@ -193,6 +185,6 @@ export function PokemonDetail({
           </div>
         )}
       </div>
-    </div>
+    </main>
   );
 }

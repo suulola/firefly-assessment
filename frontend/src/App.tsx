@@ -1,75 +1,55 @@
-import { useEffect, useState } from "react";
-import { PokemonList } from "./components/PokemonList";
-import { PokemonDetail } from "./components/PokemonDetail";
-import { addFavorite, getFavorites, removeFavorite } from "./lib/pokemonClient";
-import styles from "./App.module.css";
+import { useState } from "react";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "sonner";
+import { PokemonDetail } from "@/components/PokemonDetail";
+import { PokemonList } from "@/components/PokemonList";
+import { QueryErrorBoundary } from "@/components/QueryErrorBoundary";
+import { useFavorites } from "@/hooks/useFavorites";
+import { createQueryClient } from "@/queryClient";
+import styles from "@/App.module.scss";
 
 export function App() {
-  const [selectedId, setSelectedId] = useState<number | null>(null);
-  const [favoriteIds, setFavoriteIds] = useState<Set<number>>(new Set());
-  const [favoriteErrors, setFavoriteErrors] = useState<Record<number, string>>({});
-
-  useEffect(() => {
-    getFavorites()
-      .then((ids) => setFavoriteIds(new Set(ids)))
-      .catch(() => {
-        // Badges/filter just stay empty until the next successful load —
-        // the list itself still works without favorites data.
-      });
-  }, []);
-
-  function clearFavoriteError(id: number) {
-    setFavoriteErrors((prev) => {
-      if (!(id in prev)) return prev;
-      const next = { ...prev };
-      delete next[id];
-      return next;
-    });
-  }
-
-  async function toggleFavorite(id: number) {
-    const wasFavorited = favoriteIds.has(id);
-
-    // A new toggle attempt supersedes any error left over from a previous one.
-    clearFavoriteError(id);
-
-    setFavoriteIds((prev) => {
-      const next = new Set(prev);
-      if (wasFavorited) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-
-    try {
-      if (wasFavorited) await removeFavorite(id);
-      else await addFavorite(id);
-    } catch {
-      setFavoriteIds((prev) => {
-        const next = new Set(prev);
-        if (wasFavorited) next.add(id);
-        else next.delete(id);
-        return next;
-      });
-      setFavoriteErrors((prev) => ({ ...prev, [id]: "Couldn't save. Try again." }));
-    }
-  }
+  const [queryClient] = useState(createQueryClient);
 
   return (
-    <div className={styles.page}>
-      <PokemonList
-        selectedId={selectedId}
-        onSelect={setSelectedId}
-        favoriteIds={favoriteIds}
-        favoriteErrors={favoriteErrors}
-        onToggleFavorite={toggleFavorite}
-      />
-      <PokemonDetail
-        pokemonId={selectedId}
-        onSelect={setSelectedId}
-        favoriteIds={favoriteIds}
-        favoriteErrors={favoriteErrors}
-        onToggleFavorite={toggleFavorite}
-      />
+    <QueryClientProvider client={queryClient}>
+      <QueryErrorBoundary title="The app crashed" className={styles.appError}>
+        <PokemonExplorer />
+      </QueryErrorBoundary>
+    </QueryClientProvider>
+  );
+}
+
+function PokemonExplorer() {
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const { favoriteIds, favoriteErrors, toggleFavorite, isFavoritePending } = useFavorites();
+
+  const mobileView = selectedId === null ? "list" : "detail";
+
+  return (
+    <div className={styles.page} data-mobile-view={mobileView}>
+      <Toaster position="bottom-right" richColors />
+      <QueryErrorBoundary title="The Pokémon list crashed" className={styles.listPanelError}>
+        <PokemonList
+          selectedId={selectedId}
+          onSelect={setSelectedId}
+          favoriteIds={favoriteIds}
+          favoriteErrors={favoriteErrors}
+          onToggleFavorite={toggleFavorite}
+          isFavoritePending={isFavoritePending}
+        />
+      </QueryErrorBoundary>
+      <QueryErrorBoundary title="The detail view crashed" className={styles.detailPanelError}>
+        <PokemonDetail
+          pokemonId={selectedId}
+          onSelect={setSelectedId}
+          onBack={() => setSelectedId(null)}
+          favoriteIds={favoriteIds}
+          favoriteErrors={favoriteErrors}
+          onToggleFavorite={toggleFavorite}
+          isFavoritePending={isFavoritePending}
+        />
+      </QueryErrorBoundary>
     </div>
   );
 }

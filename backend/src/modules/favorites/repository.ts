@@ -1,18 +1,37 @@
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile, rename, writeFile } from "node:fs/promises";
+import { mkdir } from "node:fs/promises";
+import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-
-// Data-access layer for the favorites module: file-based JSON storage
-// behind a read/write interface, so the storage mechanism can be swapped
-// later without touching the service or route layers.
-// Not yet wired to a route (see issue 004 for add/remove/list endpoints).
+import { randomUUID } from "node:crypto";
+import type { FavoritesStore } from "@/modules/favorites/types.js";
 
 const DEFAULT_STORE_PATH = fileURLToPath(
   new URL("../../../data/favorites.json", import.meta.url),
 );
 
-export interface FavoritesStore {
-  read(): Promise<number[]>;
-  write(favoriteIds: number[]): Promise<void>;
+export class FavoritesStorageError extends Error {
+  constructor(message: string, options: { cause?: unknown } = {}) {
+    super(message, { cause: options.cause });
+    this.name = "FavoritesStorageError";
+  }
+}
+
+function parseFavoriteIds(contents: string): number[] {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(contents);
+  } catch (cause) {
+    throw new FavoritesStorageError("Favorites store contains malformed JSON.", { cause });
+  }
+
+  if (
+    !Array.isArray(parsed) ||
+    !parsed.every((id) => Number.isInteger(id) && id > 0)
+  ) {
+    throw new FavoritesStorageError("Favorites store contains invalid data.");
+  }
+
+  return parsed;
 }
 
 export function createFileFavoritesStore(
@@ -22,7 +41,7 @@ export function createFileFavoritesStore(
     async read() {
       try {
         const contents = await readFile(storePath, "utf-8");
-        return JSON.parse(contents) as number[];
+        return parseFavoriteIds(contents);
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code === "ENOENT") {
           return [];
@@ -31,7 +50,11 @@ export function createFileFavoritesStore(
       }
     },
     async write(favoriteIds) {
-      await writeFile(storePath, JSON.stringify(favoriteIds, null, 2));
+      const storeDir = dirname(storePath);
+      await mkdir(storeDir, { recursive: true });
+      const tempPath = join(storeDir, `.${basename(storePath)}.${process.pid}.${randomUUID()}.tmp`);
+      await writeFile(tempPath, JSON.stringify(favoriteIds, null, 2));
+      await rename(tempPath, storePath);
     },
   };
 }

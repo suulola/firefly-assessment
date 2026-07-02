@@ -1,77 +1,90 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Orientation for Claude Code (or any agent) working in this repository — where things live and what not to silently undo. Not a project README; see `README.md` for the human-facing setup/deployment/submission doc, and don't duplicate that content here.
 
-## What this is
+## Where things live
 
-A take-home assessment: a full-stack Pokémon explorer. React frontend, Node.js/Express backend that proxies the PokéAPI and manages a favorites list. Full requirements are in `requirement.pdf`; the working spec derived from it is `PRD.md`. Work is broken into vertical-slice issues in `issues/` (see `issues/README.md` for build order and dependencies) — check there before starting new work, since each issue has its own acceptance criteria and test-seam expectations.
+**`backend/`** — Express + TypeScript. The only caller of PokéAPI. Uses `@/*` import aliases (see below), same convention as the frontend.
+- `src/modules/<name>/` — one folder per domain (`health`, `pokemon`, `favorites`), each split into `route.ts` (HTTP only), `service.ts` (business logic), `repository.ts` (the module's sole I/O boundary — PokéAPI HTTP or file persistence), `types.ts` (every interface/type the module declares, exported from one place).
+- `src/config.ts` — the only backend module that should read deployment env directly (`PORT`, `CORS_ORIGIN`, `FAVORITES_STORE_PATH`, `POKEAPI_TIMEOUT_MS`, `POKEAPI_CACHE_TTL_MS`, `RATE_LIMIT_WINDOW_MS`, `RATE_LIMIT_MAX`) and fail fast on invalid numeric values.
+- `src/http/response.ts` — `successResponse`/`errorResponse`/`catchErrorResponse`. Every route response goes through these, no ad hoc shapes. `src/http/types.ts` holds `ApiResponse<T>`. Error responses may include optional `code` and `requestId` fields, but the deployed envelope remains backward-compatible: `{ success, data, message }`.
+- `src/http/errors.ts`, `src/http/middleware.ts`, `src/http/validation.ts` — typed `HttpError`/`BadRequestError`, request id/logging/error middleware, async route wrapper, and focused validators for route params/query/body.
+- `src/rateLimit.ts`, `src/openapi.ts` — rate limiting and OpenAPI contract support.
+- `src/types.ts` — app-level types not owned by any single module (currently `CreateAppOptions`).
+- `data/favorites.json` — file-backed favorites store (gitignored; `.gitkeep` only).
 
-Two independently-run services, no shared runtime coupling:
-- `backend/` — Node.js, Express, TypeScript
-- `frontend/` — React, Vite, TypeScript
+**`frontend/`** — React + Vite + TypeScript. Talks only to the backend, never PokéAPI directly. Uses `@/` import aliases.
+- `src/services/` — the only place that calls `fetch`. `pokemonService.ts`, `favoritesService.ts`, `healthService.ts` (currently unused — no health-check UI wired up, left in place). `apiResponse.ts` validates and unwraps the backend envelope (shape only). `schemas.ts` holds the Zod schemas for each endpoint's *unwrapped* `data` payload, plus `parsePayload()`, the helper every service calls after `readApiResponse` to validate that payload before returning it.
+- `src/hooks/` — `usePokemonList.ts` (raw infinite query), `usePokemonListView.ts` (filtering/search/favorites-only state + the fetch-more decision, consumed by `PokemonList.tsx`), `useProgressiveSearchFetch.ts` (the bounded background-fetch-while-searching effect, extracted so it's unit-testable via `renderHook` without a full component render), `usePokemonDetail.ts`, `useFavorites.ts` own all TanStack Query configuration. `queryKeys.ts` centralizes query key factories (`pokemonKeys`, `favoriteKeys`, including `favoriteKeys.toggleMutation`).
+- `src/components/` — render hook state, don't configure queries inline. `ErrorBoundary.tsx` / `QueryErrorBoundary.tsx` / `ErrorFallback.tsx` are the crash-recovery boundary trio (see below — not for ordinary API errors).
+- `src/queryClient.ts` — `QueryClient` factory; also where the global `QueryCache`/`MutationCache` `onError` hooks report to `lib/observability.ts`.
+- `src/lib/` — pure helpers (formatting, type colors, `backendClient.ts`'s `BACKEND_BASE_URL`) plus `observability.ts`, the client error-reporting boundary (see below).
+
+**`PRD.md`, `issues/`** — spec and vertical-slice issue breakdown. Check `issues/README.md` for build order/dependencies before starting new work; each issue has its own acceptance criteria.
 
 ## Commands
 
-All commands run from inside `backend/` or `frontend/` respectively — there is no root package.json or workspace tooling tying them together.
+Backend:
 
-**Backend** (`cd backend`):
-- `npm run dev` — start with hot reload (tsx watch), listens on `:4000`
-- `npm test` — run the full test suite once (vitest)
-- `npm run test:watch` — watch mode
-- `npx vitest run test/health.test.ts` — run a single test file
-- `npx tsc -p tsconfig.json --noEmit` — typecheck (includes `src` and `test`)
-- `npm run build` — compile `src` only to `dist` (uses `tsconfig.build.json`)
-
-**Frontend** (`cd frontend`):
-- `npm run dev` — start Vite dev server on `:5173`
-- `npm test` — run the full test suite once (vitest)
-- `npm run test:watch` — watch mode
-- `npx vitest run test/App.test.tsx` — run a single test file
-- `npx tsc -b` — typecheck
-- `npm run lint` — oxlint
-- `npm run build` — production build
-
-## Backend architecture: module-based
-
-Backend code is organized by domain under `src/modules/<name>/`, not by technical layer. Each module owns the layers it needs:
-
-- `route.ts` — Express router, HTTP concerns only (status codes, request/response shape). No business logic.
-- `service.ts` — business logic. Only add this file when there's actual logic to hold; a route that just calls a repository doesn't need an empty passthrough service.
-- `repository.ts` — the module's only I/O boundary: the PokéAPI HTTP client, or file-based persistence. Nothing outside a module's `repository.ts` should call `fetch()` or touch the filesystem directly for that module's data.
-
-Current modules:
-- `modules/health` — liveness (`GET /health`) and a PokéAPI deep-reachability check (`GET /health/pokeapi`). Its service reuses `modules/pokemon/repository.ts` rather than calling PokéAPI itself — this is the pattern for cross-module reuse: import another module's `repository`/`service`, never its `route`.
-- `modules/pokemon` — `repository.ts` wraps the only PokéAPI HTTP client in the backend (`pokeApiGet`, `POKEAPI_BASE_URL`). `service.ts`/`route.ts` implement `GET /pokemon` (first 150, list shape) and `GET /pokemon/:id` (types/abilities/flattened evolution chain).
-- `modules/favorites` — `repository.ts` is file-based JSON persistence (`createFileFavoritesStore`, backed by `backend/data/favorites.json`) behind a `read`/`write` interface, so the storage mechanism can change without touching callers. Not yet wired to a route.
-
-`src/app.ts` composes the Express app from module routers and exports it (unstarted) for testing; `src/server.ts` is the only place that calls `.listen()`.
-
-When adding backend functionality: create a new `src/modules/<name>/` folder following this pattern rather than adding to a flat `routes/` or `lib/` directory.
-
-## Backend error responses
-
-Every route that can fail (PokéAPI proxy failures, future favorites-storage failures) responds with the same envelope — **not** an ad hoc `{ error: string }` shape:
-
-```json
-{ "statusCode": 502, "message": "Failed to load the Pokémon list." }
+```bash
+cd backend
+npm run dev
+npm test
+npm run build
 ```
 
-`statusCode` is also the HTTP response status. `modules/pokemon/route.ts` has a small local `sendError(res, statusCode, message)` helper — reuse that pattern (or promote it to a shared helper only once a third module needs the same thing; two call sites in one file doesn't justify a new shared module yet). When writing the integration test for a new failing route, assert against `{ statusCode, message }`, not against whatever shape feels natural in the moment — this exact mismatch (a route-local `{ error }` shape drifting from the documented envelope) has already happened once in this repo.
+Frontend:
 
-## Testing seams
+```bash
+cd frontend
+npm run dev
+npm test
+npm run lint
+npm run build
+```
 
-Two seams only, agreed in `PRD.md`'s Testing Decisions — don't test at other boundaries (no mocking internal collaborators, no hitting the real PokéAPI in tests, no snapshotting internal state):
+## Decisions an agent must not silently undo
 
-- **Backend**: integration tests via `supertest` against the exported `app` (`src/app.ts`). The only thing mocked is the outbound PokéAPI call, via `msw`'s Node server (`backend/test/msw/`). Routing, business logic, and file-based persistence all run for real.
-- **Frontend**: React Testing Library tests that render components and interact with them like a user would. The only thing mocked is the backend HTTP layer, via `msw` (`frontend/test/msw/`).
+- **Backend response envelope**: `{ success: boolean, data: T | null, message: string }`, always via `src/http/response.ts`'s helpers. Never hand-roll a route response.
+- **Backend errors are typed and centralized.** Routes should validate first, then either return `successResponse` or pass an `HttpError`/`BadRequestError` to `next()` via `asyncHandler`; the terminal `errorMiddleware` owns the error envelope, structured error log, `code`, and `requestId`. Preserve existing user-facing messages because the frontend renders them.
+- **Backend request ids are mandatory.** `requestIdMiddleware` accepts or generates `x-request-id`, sets the same header on the response, and error responses include `requestId`. Do not add AsyncLocalStorage unless a future cross-call tracing requirement needs it.
+- **Backend config is centralized.** Use `loadConfig()` from `src/config.ts`; avoid new direct `process.env` reads outside config or logger test suppression. `createApp(options)` must keep test overrides for `favoritesStorePath`, `corsOrigin`, and PokéAPI timeout/cache settings.
+- **Unknown backend routes use the API envelope.** `notFoundMiddleware` must stay immediately before `errorMiddleware`, so 404s return `{ success: false, data: null, message, code, requestId }` instead of Express's default HTML/text response.
+- **Backend types live in a `types.ts` per module** (`src/modules/<name>/types.ts`), plus `src/types.ts` for app-level types and `src/http/types.ts` for the shared envelope type. Don't declare `interface`/`type` inline in a `route.ts`/`service.ts`/`repository.ts` — add it to the module's `types.ts` and import it back.
+- **Backend internal imports use the `@/*` alias** (`@/http/response.js`, `@/modules/pokemon/service.js`, etc.), never relative `../../` chains. This is *not* Node's native subpath-imports mechanism — that requires keys to start with `#` by spec (confirmed empirically: Node treats a `@/...` specifier as a scoped-package lookup, not a subpath import, so it can never be wired through `package.json`'s `"imports"` field). Instead: `tsconfig.json`'s `paths` (`@/*` → `./src/*`) drives both type-checking *and* `tsx`'s own independent tsconfig-aware resolver in dev — `tsx` resolves `paths` aliases itself, unrelated to Node's native imports. `vitest.config.ts`'s `resolve.alias` handles tests the same way (Vite-level, prefix-agnostic). `npm run build` runs `tsc-alias` after `tsc` specifically because `tsc` does not rewrite `paths` aliases in emitted JS — `tsc-alias` rewrites every `@/*` specifier to a real relative path in `dist/`, so the compiled output never depends on alias resolution at runtime; only `tsx` (dev) and `vitest` (tests) do. The `.js` extension on every specifier (including for `.ts` source files) is required by `moduleResolution: NodeNext` — Node ESM doesn't auto-resolve extensions the way CommonJS did; this isn't something the alias changes or removes.
+- **Extract awaited call results to a variable before passing them as an argument** — `const detail = await getPokemonDetail(id); successResponse(res, detail, "...");`, not `successResponse(res, await getPokemonDetail(id), "...")`. Applies across all route handlers.
+- **Backend validation is explicit at the route edge.** Use `src/http/validation.ts` for Pokémon list query (`limit`, `offset`), Pokémon id params, and favorite ids. Invalid input is a 400 error with the standard envelope, not a silent normalization except for capping list pagination to the first-150 assessment scope.
+- **PokéAPI access is guarded at the repository boundary.** `pokeApiGet()` handles timeout via `AbortController`, validates upstream payload shapes for the endpoints this app uses, enriches `PokeApiError` with `kind`/`status`, and caches successful GET responses in a small in-memory TTL cache. Tests call `clearPokeApiCache()` in setup; production should not depend on cache state for correctness.
+- **Favorites storage stays file-based for assessment scope.** `createFileFavoritesStore()` creates parent directories before writes, validates JSON before returning ids, and writes through a same-directory temp file followed by `rename()` so callers do not observe partially-written JSON. Favorite add/remove operations are serialized per store in `favorites/service.ts` to avoid per-process read-modify-write races. Do not replace this with a database unless the assessment scope changes.
+- **Security baseline stays light.** `helmet()` is enabled, JSON bodies are limited to 16kb, CORS still fails closed by default (`http://localhost:5173` only unless `CORS_ORIGIN` is set), and `express-rate-limit` returns the standard API envelope on `429`.
+- **Health endpoints are split by purpose.** `/health` is liveness only and must not depend on PokéAPI. `/health/pokeapi` checks the upstream. `/health/ready` checks backend status, favorites storage readability, and PokéAPI reachability.
+- **Operational contract endpoints are explicit.** `/openapi.json` serves the OpenAPI contract; `/docs` serves Swagger UI. Keep existing application routes unchanged.
+- **Graceful shutdown lives only in `server.ts`.** Keep tests importing `app.ts`; `server.ts` owns the `Server` reference, startup log, `SIGTERM`/`SIGINT` handlers, and `server.close()`.
+- **`apiResponse.ts` rejects malformed responses** (non-boolean `success`, non-string `message`, missing `data` on success) rather than passing them through. Don't reintroduce a permissive fallback here — the whole test suite used to pass "by accident" against unenveloped mocks before this was tightened.
+- **Query keys are centralized** in `src/hooks/queryKeys.ts` (`pokemonKeys.list()`, `pokemonKeys.detail(id)`, `favoriteKeys.all`). Don't inline ad hoc key arrays in components or hooks.
+- **Favorite toggle race fix**: the favorite button for a given Pokémon disables itself while its own mutation is pending, and `onMutate` derives add-vs-remove from the query cache (`queryClient.getQueryData`), not from a `wasFavorited` value captured in the caller's render closure. Don't revert to reading `favoriteIds.has(id)` at click time — that's the exact bug this fixed.
+- **Suspense is intentionally not used — reassessed, decision unchanged.** `PokemonList` and `PokemonDetail` have independently-tested loading/error/empty states, driven by explicit `isPending`/`isError`/`isFetchingNextPage`, not just a binary loaded/loading split — e.g. "loading the first page" vs. "loading more while scrolling" vs. "background-fetching while searching" are three distinct, separately-rendered states for the *same* query, and the empty-favorites vs. no-search-results distinction depends on knowing which filter produced zero items. Suspense collapses all of that to "thrown or not," so adopting it would mean rebuilding that granularity some other way for no benefit here, given the two panels already load and error independently via `QueryErrorBoundary`. No `useSuspenseQuery`/`suspense: true` appears anywhere in `src/`; keep it that way unless a future requirement genuinely needs Suspense's streaming/waterfall behavior. If it's adopted later, give each panel its own `<Suspense>` boundary — one shared boundary would block panels on each other's loading state.
+- **Error boundaries catch render crashes, not ordinary API failures.** `ErrorBoundary` + `QueryErrorBoundary` are a safety net for unexpected bugs (layered: one app-level, one each around `PokemonList`/`PokemonDetail`, so one panel crashing doesn't blank the other). Expected API failures stay as inline `isError` states in the component — never thrown or routed through a boundary. `ErrorBoundary` takes an optional `source` prop (set by `QueryErrorBoundary` to its `title`) used to label the crash when it's reported — see observability below.
+- **Client error reporting goes through `src/lib/observability.ts`, never a direct `console.error`.** `reportError`/`reportQueryError`/`reportMutationError` take an `ErrorReportContext` (`source`, `action`, `extra`). The sink is swappable (`setErrorSink`/`resetErrorSink`) — defaults to `console.error` in dev/prod and a no-op in `import.meta.env.MODE === "test"`, so tests stay quiet by default and can assert on reporting by installing a spy sink instead of mocking `console.error`. `queryClient.ts` wires a global `QueryCache`/`MutationCache` `onError` through this for query/mutation failures; that's reporting only, not UI. Mutations with richer local handling can set `meta: { suppressGlobalErrorReport: true }` to avoid duplicate reports — `useFavorites` does this because its local `onError` adds the affected Pokémon id and owns the toast/rollback flow. Swapping in Sentry/Datadog later means replacing the sink in this one file.
+- **API payloads are Zod-validated, not just the envelope.** `apiResponse.ts`'s `readApiResponse` validates envelope shape only (`{success, data, message}`); `schemas.ts`'s `parsePayload()` validates the unwrapped `data` against a schema per endpoint (`pokemonListPageSchema`, `pokemonDetailSchema`, `favoritesSchema`, `favoriteMutationResponseSchema`) and throws a clear, endpoint-specific message ("Received invalid Pokémon list data from the server.") on mismatch, reporting the Zod issues through observability. `PokemonListItem`/`PokemonListPage`/`EvolutionStage`/`PokemonDetail` in `pokemonService.ts` are `z.infer<>` from those schemas, not hand-duplicated — don't reintroduce a parallel hand-written interface that can drift from the schema.
+- **`PokemonList`'s row list is virtualized** with `@tanstack/react-virtual` (`useVirtualizer` in `PokemonList.tsx`), not a plain `<ul>` map over every loaded item. `usePokemonListView`'s `items` is the *full* filtered array (unsliced) — there's no more client-side "reveal N more" batching (`visibleCount`), because the virtualizer already bounds the DOM regardless of array size; don't reintroduce that batching. The near-bottom scroll detection that triggers `fetchNextPage` (server pagination) is separate, pixel-based (`scrollTop`/`clientHeight`/`scrollHeight` on the scroll container), and independent of the virtualizer's own viewport math — don't conflate the two. Tests rely on `test/setup.ts`'s global `offsetHeight`/`offsetWidth` stub (jsdom reports 0 for both, and this jsdom version has no `ResizeObserver`, so react-virtual would otherwise render zero rows in every test) — per-test `Object.defineProperty` overrides of `clientHeight`/`scrollHeight`/`scrollTop` (see `PokemonList.test.tsx`'s scroll test) layer on top of that default without conflict.
+- **`queryClient.ts`'s retry policy is intentional, not `false` by accident.** Queries retry (up to 2 extra attempts) only when the thrown error is a `TypeError` — i.e. `fetch` itself rejected (offline, DNS, connection refused). Every other failure (HTTP error envelope, Zod schema mismatch) is a deliberately-thrown `Error` from `readApiResponse`/`parsePayload`, and retrying those wastes time since asking again doesn't change the answer. Mutations don't retry at all — `useFavorites`'s optimistic-update/rollback flow already handles failure, and an automatic retry would refire the mutation after that rollback already ran. `staleTime`/`gcTime`/`refetchOnWindowFocus`/`refetchOnReconnect` are all set explicitly in `queryClient.ts` (with reasoning in the comments there) so they read as decisions, not omissions.
+- **Avoid inline `style={}` for anything with a small, known set of states** — use a CSS module class or a `data-*` attribute selector (see `PokemonList.module.scss`'s `.toggleTrack[data-checked="true"]`). Inline styles remain fine for genuinely per-instance dynamic values with no fixed variant set: per-type pill colors in `PokemonDetail.tsx` (computed from `colorForType`), and the virtualizer's per-row `transform`/list `height` in `PokemonList.tsx` (computed from `useVirtualizer`, a different value on every row/render).
+- **Styling is Sass Modules (`.module.scss`), not plain CSS.** Component styles live in a `.module.scss` alongside their component; `index.scss` holds the global `:root` custom properties and resets. Mobile-breakpoint overrides nest under the base rule with `&` rather than living in a separate top-level `@media` block (see `PokemonList.module.scss`'s `.panel`) — keep that pattern for new responsive rules instead of duplicating selectors.
+- **Semantic landmarks matter for this UI**: `PokemonList` renders as `<nav aria-label="Pokémon list">`, `PokemonDetail` as `<main aria-label="Pokémon detail">`. Section labels inside the detail view (Types/Abilities/Evolution line) are `<h3>`, nested under the `<h2>` Pokémon name and the list's `<h1>`. Don't flatten these back to plain `<div>`s. The selected list item is marked with `aria-current="true"` on its select button (not `aria-pressed` — selecting an item isn't a toggle, it's "this is the current item," same as a breadcrumb/nav pattern). Favorite buttons expose pending state via both `disabled` and `aria-busy`. `ErrorFallback`'s retry button autofocuses on mount. A visually-hidden `role="status"` region in `PokemonList.tsx`'s header announces the result count when searching or favorites-only filtering is active.
 
-## Local dev cross-service wiring
+## Known limitations
 
-`frontend/vite.config.ts` proxies `/health` (extend this list as new backend routes land) to `http://localhost:4000`, so the frontend can call the backend same-origin in dev without needing CORS config on the backend. `backendClient.ts`'s `BACKEND_BASE_URL` is `""` in dev (relative, goes through the proxy) and reads `VITE_BACKEND_URL` otherwise. Production CORS + the deployed backend URL are issue 008's concern (deployment), not something to add now.
+- Frontend error reports can now carry backend `requestId` in the future because backend responses echo `x-request-id` and include `requestId` on error bodies, but the frontend observability abstraction does not yet extract that field into `ErrorReportContext.requestId`.
+- API versioning is intentionally documented-only for now. Current deployed routes remain `/pokemon`, `/favorites`, and `/health`; moving to `/api/v1` would require coordinated frontend and deployment changes.
+- No authentication, metrics endpoint, APM/distributed tracing, or database-backed/multi-instance-safe favorites store is installed. Those are larger enterprise steps outside this assessment scope.
+- `useVirtualizer`'s row height is a fixed estimate (`ROW_HEIGHT_PX` in `PokemonList.tsx`) with a `measureElement` override that falls back to the estimate when `getBoundingClientRect()` reports 0 (jsdom). Real browsers remeasure dynamically per row, so this is a non-issue there; it's called out here so a future row-content change (e.g. wrapping long names) doesn't silently break test assumptions without an obvious reason why.
+- The retry-vs-`TypeError` distinction in `queryClient.ts` depends on `fetch` actually rejecting with `TypeError` on network failure, which is standard `fetch` behavior but not something this app's own tests exercise end-to-end (no frontend test currently simulates a real network-level failure via msw) — covered instead by a direct unit test against `createQueryClient()` with a mocked `queryFn` that rejects with `TypeError`.
 
-## Design reference
+## Testing
 
-There is a companion design at claude.ai/design — project `6cc83108-ccfe-453a-b946-765108863820`, file `Pokemon Explorer.dc.html`:
-https://claude.ai/design/p/6cc83108-ccfe-453a-b946-765108863820?file=Pokemon+Explorer.dc.html
+Backend tests use Supertest against the exported Express app and MSW for outbound PokéAPI calls.
 
-**Before implementing or changing anything under `frontend/src/`, fetch and reference this file** via the `claude_design` MCP tool (`DesignSync`: `list_files` / `get_file` against that project ID) rather than implementing UI from assumption. If a session hits a "needs design-system authorization" error from `DesignSync`, the user needs to run `/design-login` first — that's an interactive OAuth step only the user can complete.
+Frontend tests use React Testing Library and MSW for backend HTTP calls.
+
+Do not hit the real PokéAPI in tests.
