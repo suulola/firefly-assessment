@@ -12,8 +12,10 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.101.2",
     "react": "^19.2.7",
-    "react-dom": "^19.2.7"
+    "react-dom": "^19.2.7",
+    "sonner": "^2.0.7"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",

@@ -1,26 +1,23 @@
-clean up App.tsx, getBackendHealth should be in a service folder
-- - -- 
-res.status(200).json(await getPokemonList()); - we should have a response helper - successResponse, errorResponse, catchErrorResponse that takes in the data returned and handles the response - that way, we have more consistency on how the data is always shown on the frontend with a structure like {success: boolean, data: T, message: string }
-- - -- 
+# TODO Review
 
-use import alias rather than relative path import
+## Implemented
 
---- -- - -
-would be nice to have design token implemented in App.scss
+- Cleaned up `App.tsx` by moving favorite state/mutations into `src/hooks/useFavorites.ts`.
+- Added frontend service modules under `src/services/`, including `healthService.ts` for `getBackendHealth`.
+- Added backend response helpers:
+  - `successResponse`
+  - `errorResponse`
+  - `catchErrorResponse`
+- Standardized backend responses to `{ success: boolean, data: T | null, message: string }`.
+- Added frontend API response unwrapping in `src/services/apiResponse.ts`.
+- Switched source imports to the `@/` alias where appropriate.
+- Added design tokens as CSS custom properties in `src/index.css`.
+- Trimmed and corrected `CLAUDE.md`.
+- Added `sonner` toast notifications for favorite save/remove failures and successes.
+- Changed Pokémon list loading to fetch backend pages as the user scrolls instead of fetching all 150 up front.
+- Adopted TanStack Query for API state:
+  - `useInfiniteQuery` for paginated Pokémon loading.
+  - `useQuery` for detail and favorites reads.
+  - `useMutation` for optimistic favorite add/remove updates.
 
-- -- - - 
 
-bloated Claude.md fix
-
--------
-
-Tailwind switch
-
--------
-
-sonner for toast notification
-
---------
-
-performance optimization
-- rather than fetch all 150 at once, fetch 10-20 and as the user scroll keep fetching more

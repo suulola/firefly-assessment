@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
-import { getPokemonList, type PokemonListItem } from "../lib/pokemonClient";
-import { formatName, numberLabel } from "../lib/pokemonFormat";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import {
+  getPokemonListPage,
+  type PokemonListItem,
+  type PokemonListPage,
+} from "@/services/pokemonService";
+import { formatName, numberLabel } from "@/lib/pokemonFormat";
 import styles from "./PokemonList.module.css";
 
-type Status = "loading" | "ready" | "error";
-
 const SKELETON_ROWS = Array.from({ length: 9 }, (_, i) => i);
-const BATCH_SIZE = 30;
+const PAGE_SIZE = 30;
 const LOAD_MORE_THRESHOLD_PX = 200;
 
 interface PokemonListProps {
@@ -24,23 +27,26 @@ export function PokemonList({
   favoriteErrors,
   onToggleFavorite,
 }: PokemonListProps) {
-  const [status, setStatus] = useState<Status>("loading");
-  const [items, setItems] = useState<PokemonListItem[]>([]);
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
-  function load() {
-    setStatus("loading");
-    getPokemonList()
-      .then((list) => {
-        setItems(list);
-        setStatus("ready");
-      })
-      .catch(() => setStatus("error"));
-  }
+  const pokemonQuery = useInfiniteQuery({
+    queryKey: ["pokemon-list"],
+    queryFn: ({ pageParam }) => getPokemonListPage(PAGE_SIZE, pageParam),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage: PokemonListPage) =>
+      lastPage.hasMore ? lastPage.offset + lastPage.items.length : undefined,
+  });
 
-  useEffect(load, []);
+  const items: PokemonListItem[] =
+    pokemonQuery.data?.pages.flatMap((page) => page.items) ?? [];
+  const total = pokemonQuery.data?.pages[0]?.total ?? 0;
+  const status = pokemonQuery.isPending
+    ? "loading"
+    : pokemonQuery.isError
+      ? "error"
+      : "ready";
 
   const normalizedQuery = searchQuery.trim().toLowerCase();
   const visibleItems = items
@@ -52,18 +58,32 @@ export function PokemonList({
     );
   const displayedItems = visibleItems.slice(0, visibleCount);
 
-  // A new filter/search/data set starts back at one batch, not wherever the
-  // previous list had scrolled to.
+  const canLoadMoreUnfiltered =
+    status === "ready" && pokemonQuery.hasNextPage && !favoritesOnly;
+
   useEffect(() => {
-    setVisibleCount(BATCH_SIZE);
-  }, [items, favoritesOnly, normalizedQuery]);
+    setVisibleCount(PAGE_SIZE);
+  }, [favoritesOnly, normalizedQuery]);
+
+  function loadMore() {
+    if (!canLoadMoreUnfiltered || pokemonQuery.isFetchingNextPage) return;
+    void pokemonQuery.fetchNextPage().then((result) => {
+      if (!result.isError) {
+        setVisibleCount((prev) => prev + PAGE_SIZE);
+      }
+    });
+  }
 
   function handleScroll(e: React.UIEvent<HTMLDivElement>) {
     const el = e.currentTarget;
     const nearBottom =
       el.scrollTop + el.clientHeight >= el.scrollHeight - LOAD_MORE_THRESHOLD_PX;
     if (nearBottom) {
-      setVisibleCount((prev) => Math.min(prev + BATCH_SIZE, visibleItems.length));
+      if (visibleCount < visibleItems.length) {
+        setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, visibleItems.length));
+      } else {
+        loadMore();
+      }
     }
   }
 
@@ -74,7 +94,7 @@ export function PokemonList({
           <h1 className={styles.title}>Pokémon Explorer</h1>
           <div className={styles.subtitle}>
             {status === "ready"
-              ? `${items.length} Pokémon · ${favoriteIds.size} favorited`
+              ? `${total} Pokémon · ${favoriteIds.size} favorited`
               : " "}
           </div>
         </div>
@@ -129,7 +149,7 @@ export function PokemonList({
             <div className={styles.errorMessage}>
               Something went wrong loading the list.
             </div>
-            <button className={styles.retryButton} onClick={load}>
+            <button className={styles.retryButton} onClick={() => pokemonQuery.refetch()}>
               Retry
             </button>
           </div>
@@ -202,6 +222,12 @@ export function PokemonList({
               );
             })}
           </ul>
+        )}
+
+        {status === "ready" && pokemonQuery.isFetchingNextPage && (
+          <div className={styles.loadMoreStatus} role="status">
+            Loading more Pokémon…
+          </div>
         )}
       </div>
     </div>

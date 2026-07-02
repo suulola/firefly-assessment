@@ -27,7 +27,12 @@ describe("favorites", () => {
 
     const response = await request(app).post("/favorites").send({ id: 25 });
 
-    expect(response.status).toBe(204);
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      success: true,
+      data: { id: 25 },
+      message: "Favorite saved.",
+    });
     const ids = await createFileFavoritesStore(storePath).read();
     expect(ids).toEqual([25]);
   });
@@ -39,7 +44,7 @@ describe("favorites", () => {
     await request(app).post("/favorites").send({ id: 25 });
     const response = await request(app).post("/favorites").send({ id: 25 });
 
-    expect(response.status).toBe(204);
+    expect(response.status).toBe(200);
     const ids = await createFileFavoritesStore(storePath).read();
     expect(ids).toEqual([25]);
   });
@@ -51,7 +56,12 @@ describe("favorites", () => {
 
     const response = await request(app).delete("/favorites/25");
 
-    expect(response.status).toBe(204);
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      success: true,
+      data: { id: 25 },
+      message: "Favorite removed.",
+    });
     const ids = await createFileFavoritesStore(storePath).read();
     expect(ids).toEqual([]);
   });
@@ -62,7 +72,7 @@ describe("favorites", () => {
 
     const response = await request(app).delete("/favorites/25");
 
-    expect(response.status).toBe(204);
+    expect(response.status).toBe(200);
     const ids = await createFileFavoritesStore(storePath).read();
     expect(ids).toEqual([]);
   });
@@ -78,7 +88,7 @@ describe("favorites", () => {
     expect(ids).toEqual([25]);
     // A fresh instance pointed at the same file serves the same data.
     const response = await request(appAfterRestart).delete("/favorites/25");
-    expect(response.status).toBe(204);
+    expect(response.status).toBe(200);
   });
 
   it("GET /favorites reflects adds and removes made through the add/remove endpoints", async () => {
@@ -90,13 +100,21 @@ describe("favorites", () => {
 
     const afterAdds = await request(app).get("/favorites");
     expect(afterAdds.status).toBe(200);
-    expect(afterAdds.body).toEqual([25, 6]);
+    expect(afterAdds.body).toEqual({
+      success: true,
+      data: [25, 6],
+      message: "Favorites loaded.",
+    });
 
     await request(app).delete("/favorites/25");
 
     const afterRemove = await request(app).get("/favorites");
     expect(afterRemove.status).toBe(200);
-    expect(afterRemove.body).toEqual([6]);
+    expect(afterRemove.body).toEqual({
+      success: true,
+      data: [6],
+      message: "Favorites loaded.",
+    });
   });
 
   it("uses FAVORITES_STORE_PATH when no explicit option is passed (Railway volume config)", async () => {

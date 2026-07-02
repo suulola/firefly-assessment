@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { http, HttpResponse, delay } from "msw";
 import { PokemonList } from "../src/components/PokemonList";
+import { createQueryClient } from "../src/queryClient";
 import { mswServer } from "./msw/server";
 import { BACKEND_BASE_URL } from "../src/lib/backendClient";
 
@@ -16,6 +18,21 @@ function mockList(count: number) {
   });
 }
 
+function renderPokemonList() {
+  const queryClient = createQueryClient();
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <PokemonList
+        selectedId={null}
+        onSelect={() => {}}
+        favoriteIds={new Set()}
+        favoriteErrors={{}}
+        onToggleFavorite={() => {}}
+      />
+    </QueryClientProvider>,
+  );
+}
+
 describe("PokemonList", () => {
   it("shows a loading indicator while the list is in flight", async () => {
     mswServer.use(
@@ -25,7 +42,7 @@ describe("PokemonList", () => {
       }),
     );
 
-    render(<PokemonList selectedId={null} onSelect={() => {}} favoriteIds={new Set()} favoriteErrors={{}} onToggleFavorite={() => {}} />);
+    renderPokemonList();
 
     expect(await screen.findByRole("status")).toHaveTextContent(/loading/i);
   });
@@ -37,7 +54,7 @@ describe("PokemonList", () => {
       ),
     );
 
-    render(<PokemonList selectedId={null} onSelect={() => {}} favoriteIds={new Set()} favoriteErrors={{}} onToggleFavorite={() => {}} />);
+    renderPokemonList();
 
     expect(
       screen.getByRole("heading", { name: /pokémon explorer/i }),
@@ -60,7 +77,7 @@ describe("PokemonList", () => {
       ),
     );
 
-    render(<PokemonList selectedId={null} onSelect={() => {}} favoriteIds={new Set()} favoriteErrors={{}} onToggleFavorite={() => {}} />);
+    renderPokemonList();
     const initialItems = await screen.findAllByRole("listitem");
     const initialCount = initialItems.length;
 
@@ -82,7 +99,7 @@ describe("PokemonList", () => {
       ),
     );
 
-    render(<PokemonList selectedId={null} onSelect={() => {}} favoriteIds={new Set()} favoriteErrors={{}} onToggleFavorite={() => {}} />);
+    renderPokemonList();
 
     expect(
       await screen.findByText(/couldn't load pokémon/i),

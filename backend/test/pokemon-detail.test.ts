@@ -65,6 +65,9 @@ describe("GET /pokemon/:id", () => {
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({
+      success: true,
+      message: "Pokémon loaded.",
+      data: {
       id: 1,
       name: "bulbasaur",
       spriteUrl:
@@ -79,6 +82,7 @@ describe("GET /pokemon/:id", () => {
         { id: 2, name: "ivysaur", spriteUrl: expect.stringContaining("/2.png") },
         { id: 3, name: "venusaur", spriteUrl: expect.stringContaining("/3.png") },
       ],
+      },
     });
   });
 
@@ -112,7 +116,7 @@ describe("GET /pokemon/:id", () => {
     const response = await request(app).get("/pokemon/133");
 
     expect(response.status).toBe(200);
-    expect(response.body.evolutions.map((e: { name: string }) => e.name)).toEqual([
+    expect(response.body.data.evolutions.map((e: { name: string }) => e.name)).toEqual([
       "eevee",
       "vaporeon",
       "jolteon",
@@ -129,7 +133,7 @@ describe("GET /pokemon/:id", () => {
     const response = await request(app).get("/pokemon/143");
 
     expect(response.status).toBe(200);
-    expect(response.body.evolutions).toEqual([]);
+    expect(response.body.data.evolutions).toEqual([]);
   });
 
   it("returns the backend's error envelope when the PokéAPI call fails", async () => {
@@ -142,7 +146,8 @@ describe("GET /pokemon/:id", () => {
 
     expect(response.status).toBe(502);
     expect(response.body).toEqual({
-      statusCode: 502,
+      success: false,
+      data: null,
       message: "Failed to load this Pokémon.",
     });
   });

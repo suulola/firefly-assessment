@@ -1,47 +1,48 @@
-import { Router, type Response } from "express";
+import { Router } from "express";
+import {
+  catchErrorResponse,
+  errorResponse,
+  successResponse,
+} from "../../http/response.js";
 import type { FavoritesStore } from "./repository.js";
 import { addFavorite, listFavorites, removeFavorite } from "./service.js";
-
-function sendError(res: Response, statusCode: number, message: string) {
-  res.status(statusCode).json({ statusCode, message });
-}
 
 export function createFavoritesRouter(store: FavoritesStore): Router {
   const router = Router();
 
   router.get("/", async (_req, res) => {
     try {
-      res.status(200).json(await listFavorites(store));
+      successResponse(res, await listFavorites(store), "Favorites loaded.");
     } catch {
-      sendError(res, 502, "Failed to load favorites.");
+      catchErrorResponse(res, "Failed to load favorites.");
     }
   });
 
   router.post("/", async (req, res) => {
     const id = Number(req.body?.id);
     if (!Number.isInteger(id)) {
-      sendError(res, 400, "id must be an integer.");
+      errorResponse(res, 400, "id must be an integer.");
       return;
     }
     try {
       await addFavorite(store, id);
-      res.status(204).end();
+      successResponse(res, { id }, "Favorite saved.");
     } catch {
-      sendError(res, 502, "Failed to save this favorite.");
+      catchErrorResponse(res, "Failed to save this favorite.");
     }
   });
 
   router.delete("/:id", async (req, res) => {
     const id = Number(req.params.id);
     if (!Number.isInteger(id)) {
-      sendError(res, 400, "id must be an integer.");
+      errorResponse(res, 400, "id must be an integer.");
       return;
     }
     try {
       await removeFavorite(store, id);
-      res.status(204).end();
+      successResponse(res, { id }, "Favorite removed.");
     } catch {
-      sendError(res, 502, "Failed to remove this favorite.");
+      catchErrorResponse(res, "Failed to remove this favorite.");
     }
   });
 

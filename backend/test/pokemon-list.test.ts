@@ -5,10 +5,14 @@ import { app } from "../src/app.js";
 import { mswServer } from "./msw/server.js";
 import { POKEAPI_BASE_URL } from "../src/modules/pokemon/repository.js";
 
-function mockPokeApiList(count: number) {
+function mockPokeApiListPage(request: Request) {
+  const url = new URL(request.url);
+  const limit = Number(url.searchParams.get("limit") ?? 150);
+  const offset = Number(url.searchParams.get("offset") ?? 0);
+  const count = Math.max(limit, 0);
   return {
     results: Array.from({ length: count }, (_, i) => {
-      const id = i + 1;
+      const id = offset + i + 1;
       return {
         name: `pokemon-${id}`,
         url: `${POKEAPI_BASE_URL}/pokemon/${id}/`,
@@ -20,16 +24,26 @@ function mockPokeApiList(count: number) {
 describe("GET /pokemon", () => {
   it("returns the first 150 Pokémon with id, name, and sprite URL", async () => {
     mswServer.use(
-      http.get(`${POKEAPI_BASE_URL}/pokemon`, () =>
-        HttpResponse.json(mockPokeApiList(150)),
+      http.get(`${POKEAPI_BASE_URL}/pokemon`, ({ request }) =>
+        HttpResponse.json(mockPokeApiListPage(request)),
       ),
     );
 
-    const response = await request(app).get("/pokemon");
+    const response = await request(app).get("/pokemon?limit=30&offset=0");
 
     expect(response.status).toBe(200);
-    expect(response.body).toHaveLength(150);
-    expect(response.body[0]).toEqual({
+    expect(response.body).toMatchObject({
+      success: true,
+      message: "Pokémon list loaded.",
+      data: {
+        total: 150,
+        limit: 30,
+        offset: 0,
+        hasMore: true,
+      },
+    });
+    expect(response.body.data.items).toHaveLength(30);
+    expect(response.body.data.items[0]).toEqual({
       id: 1,
       name: "pokemon-1",
       spriteUrl:
@@ -46,7 +60,8 @@ describe("GET /pokemon", () => {
 
     expect(response.status).toBe(502);
     expect(response.body).toEqual({
-      statusCode: 502,
+      success: false,
+      data: null,
       message: "Failed to load the Pokémon list.",
     });
   });

@@ -15,16 +15,15 @@
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #ffffff;
-  border-right: 1px solid #ecead5;
-  border-right-color: #eceae5;
-  font-family: "Manrope", sans-serif;
-  color: #211f1c;
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+  font-family: var(--font-sans);
+  color: var(--color-text);
 }
 
 .header {
   padding: 24px 20px 18px 20px;
-  border-bottom: 1px solid #eceae5;
+  border-bottom: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -36,9 +35,9 @@
   justify-content: space-between;
   gap: 10px;
   padding: 10px 12px;
-  background: #fafaf8;
-  border: 1px solid #eceae5;
-  border-radius: 10px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   cursor: pointer;
   text-align: left;
   font-size: 13px;
@@ -48,22 +47,22 @@
 }
 
 .favoritesToggle:hover {
-  background: #f3f2ed;
+  background: var(--color-surface-subtle);
 }
 
 .searchInput {
   padding: 10px 12px;
-  background: #fafaf8;
-  border: 1px solid #eceae5;
-  border-radius: 10px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   font-size: 13px;
   font-family: inherit;
-  color: #211f1c;
+  color: var(--color-text);
 }
 
 .searchInput:focus {
   outline: none;
-  border-color: #4c5fd5;
+  border-color: var(--color-primary);
 }
 
 .toggleTrack {
@@ -81,8 +80,8 @@
   width: 18px;
   height: 18px;
   border-radius: 9px;
-  background: #fff;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-toggle);
   transition: left 0.15s;
 }
 
@@ -115,9 +114,9 @@
 }
 
 .subtitle {
-  font-family: "IBM Plex Mono", monospace;
+  font-family: var(--font-mono);
   font-size: 12px;
-  color: #8a877e;
+  color: var(--color-text-muted);
   margin-top: 3px;
 }
 
@@ -162,9 +161,9 @@
 .errorBox {
   margin: 24px 16px;
   padding: 20px 16px;
-  border: 1px solid #f0d9d6;
-  background: #fdf6f5;
-  border-radius: 12px;
+  border: 1px solid var(--color-danger-border);
+  background: var(--color-danger-surface);
+  border-radius: var(--radius-lg);
   text-align: center;
 }
 
@@ -176,23 +175,23 @@
 .errorTitle {
   font-size: 14px;
   font-weight: 600;
-  color: #8a3a34;
+  color: var(--color-danger);
   margin-top: 10px;
 }
 
 .errorMessage {
   font-size: 13px;
-  color: #9c6b66;
+  color: var(--color-danger-muted);
   margin-top: 4px;
 }
 
 .retryButton {
   margin-top: 14px;
   padding: 8px 18px;
-  border-radius: 8px;
-  border: 1px solid #d98d85;
-  background: #fff;
-  color: #8a3a34;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-danger-border-strong);
+  background: var(--color-surface);
+  color: var(--color-danger);
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
@@ -211,7 +210,7 @@
 .favError {
   padding: 0 16px 8px 60px;
   font-size: 12px;
-  color: #8a3a34;
+  color: var(--color-danger);
 }
 
 .row {
@@ -220,7 +219,7 @@
   align-items: center;
   gap: 4px;
   padding: 9px 16px;
-  border-bottom: 1px solid #f3f2ee;
+  border-bottom: 1px solid var(--color-border-soft);
 }
 
 .row:hover {
@@ -229,7 +228,7 @@
 
 .rowSelected,
 .rowSelected:hover {
-  background: rgba(76, 95, 213, 0.12);
+  background: var(--color-primary-soft);
 }
 
 .selectButton {
@@ -254,9 +253,9 @@
   align-items: center;
   justify-content: center;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: transparent;
-  color: #4c5fd5;
+  color: var(--color-primary);
   font-size: 20px;
   line-height: 1;
   cursor: pointer;
@@ -275,7 +274,7 @@
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: #f5f4ef;
+  background: var(--color-surface-muted);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -301,10 +300,17 @@
 }
 
 .number {
-  font-family: "IBM Plex Mono", monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
   color: #9c998e;
   margin-top: 2px;
+}
+
+.loadMoreStatus {
+  padding: 14px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--color-text-muted);
 }
 
 .visuallyHidden {

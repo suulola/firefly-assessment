@@ -25,6 +25,14 @@ interface PokeApiListResponse {
   results: { name: string; url: string }[];
 }
 
+export interface PokemonListPage {
+  items: PokemonListItem[];
+  total: number;
+  limit: number;
+  offset: number;
+  hasMore: boolean;
+}
+
 interface PokeApiPokemon {
   id: number;
   name: string;
@@ -54,15 +62,35 @@ function idFromUrl(url: string): number {
   return Number(segments[segments.length - 1]);
 }
 
-export async function getPokemonList(): Promise<PokemonListItem[]> {
-  const { results } = await pokeApiGet<PokeApiListResponse>("/pokemon?limit=150");
+const FIRST_GENERATION_TOTAL = 150;
 
-  return results
+export async function getPokemonListPage(
+  limit: number,
+  offset: number,
+): Promise<PokemonListPage> {
+  const normalizedLimit = Math.min(Math.max(limit, 1), FIRST_GENERATION_TOTAL);
+  const normalizedOffset = Math.min(Math.max(offset, 0), FIRST_GENERATION_TOTAL);
+  const remaining = Math.max(FIRST_GENERATION_TOTAL - normalizedOffset, 0);
+  const pageSize = Math.min(normalizedLimit, remaining);
+
+  const { results } = await pokeApiGet<PokeApiListResponse>(
+    `/pokemon?limit=${pageSize}&offset=${normalizedOffset}`,
+  );
+
+  const items = results
     .map(({ name, url }) => {
       const id = idFromUrl(url);
       return { id, name, spriteUrl: spriteUrlFor(id) };
     })
     .sort((a, b) => a.id - b.id);
+
+  return {
+    items,
+    total: FIRST_GENERATION_TOTAL,
+    limit: pageSize,
+    offset: normalizedOffset,
+    hasMore: normalizedOffset + items.length < FIRST_GENERATION_TOTAL,
+  };
 }
 
 function flattenEvolutionChain(chain: PokeApiEvolutionNode): EvolutionStage[] {

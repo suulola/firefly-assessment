@@ -16,7 +16,11 @@ describe("GET /health/pokeapi", () => {
     const response = await request(app).get("/health/pokeapi");
 
     expect(response.status).toBe(200);
-    expect(response.body).toEqual({ status: "ok", pokeapi: "reachable" });
+    expect(response.body).toEqual({
+      success: true,
+      data: { status: "ok", pokeapi: "reachable" },
+      message: "PokéAPI is reachable.",
+    });
   });
 
   it("reports unreachable when the PokéAPI call fails", async () => {
@@ -27,6 +31,10 @@ describe("GET /health/pokeapi", () => {
     const response = await request(app).get("/health/pokeapi");
 
     expect(response.status).toBe(502);
-    expect(response.body).toEqual({ status: "error", pokeapi: "unreachable" });
+    expect(response.body).toEqual({
+      success: false,
+      data: null,
+      message: "PokéAPI is unreachable.",
+    });
   });
 });

@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from "react";
-import { getPokemonDetail, type PokemonDetail as PokemonDetailData } from "../lib/pokemonClient";
-import { formatName, numberLabel } from "../lib/pokemonFormat";
-import { colorForType } from "../lib/typeColors";
+import { useQuery } from "@tanstack/react-query";
+import {
+  getPokemonDetail,
+  type PokemonDetail as PokemonDetailData,
+} from "@/services/pokemonService";
+import { formatName, numberLabel } from "@/lib/pokemonFormat";
+import { colorForType } from "@/lib/typeColors";
 import styles from "./PokemonDetail.module.css";
-
-type Status = "loading" | "ready" | "error";
 
 interface PokemonDetailProps {
   pokemonId: number | null;
@@ -21,28 +22,18 @@ export function PokemonDetail({
   favoriteErrors,
   onToggleFavorite,
 }: PokemonDetailProps) {
-  const [status, setStatus] = useState<Status>("loading");
-  const [detail, setDetail] = useState<PokemonDetailData | null>(null);
-  const requestIdRef = useRef<number | null>(null);
+  const detailQuery = useQuery<PokemonDetailData>({
+    queryKey: ["pokemon-detail", pokemonId],
+    queryFn: () => getPokemonDetail(pokemonId as number),
+    enabled: pokemonId != null,
+  });
 
-  function load(id: number) {
-    requestIdRef.current = id;
-    setStatus("loading");
-    getPokemonDetail(id)
-      .then((data) => {
-        if (requestIdRef.current !== id) return; // a newer selection superseded this request
-        setDetail(data);
-        setStatus("ready");
-      })
-      .catch(() => {
-        if (requestIdRef.current !== id) return;
-        setStatus("error");
-      });
-  }
-
-  useEffect(() => {
-    if (pokemonId != null) load(pokemonId);
-  }, [pokemonId]);
+  const status = detailQuery.isPending
+    ? "loading"
+    : detailQuery.isError
+      ? "error"
+      : "ready";
+  const detail = detailQuery.data ?? null;
 
   if (pokemonId == null) {
     return (
@@ -81,7 +72,7 @@ export function PokemonDetail({
             <div className={styles.errorMessage}>
               Something went wrong loading this Pokémon.
             </div>
-            <button className={styles.retryButton} onClick={() => load(pokemonId)}>
+            <button className={styles.retryButton} onClick={() => detailQuery.refetch()}>
               Retry
             </button>
           </div>
