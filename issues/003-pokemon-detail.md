@@ -15,13 +15,13 @@ Per `PRD.md`'s Implementation Decisions, this endpoint is an intentional additio
 
 ## Acceptance criteria
 
-- [ ] Backend integration test (supertest, PokéAPI mocked): detail endpoint returns abilities, types, and a flattened evolution list for a Pokémon with a linear evolution chain.
-- [ ] Backend integration test: detail endpoint correctly flattens a branching evolution chain (e.g. Eevee-like case).
-- [ ] Backend integration test: detail endpoint returns a sensible response for a Pokémon with no evolutions.
-- [ ] Backend integration test: a mocked PokéAPI failure produces the standard error envelope.
-- [ ] Frontend RTL test (backend mocked via msw): clicking a list item renders abilities, types, and evolution stages.
-- [ ] Frontend RTL test: detail view shows its own loading state and error state, independent of the list.
-- [ ] Frontend RTL test: a Pokémon with no evolutions shows an explicit empty state, not a blank section.
+- [x] Backend integration test (supertest, PokéAPI mocked): detail endpoint returns abilities, types, and a flattened evolution list for a Pokémon with a linear evolution chain.
+- [x] Backend integration test: detail endpoint correctly flattens a branching evolution chain (e.g. Eevee-like case).
+- [x] Backend integration test: detail endpoint returns a sensible response for a Pokémon with no evolutions.
+- [x] Backend integration test: a mocked PokéAPI failure produces the standard error envelope.
+- [x] Frontend RTL test (backend mocked via msw): clicking a list item renders abilities, types, and evolution stages.
+- [x] Frontend RTL test: detail view shows its own loading state and error state, independent of the list.
+- [x] Frontend RTL test: a Pokémon with no evolutions shows an explicit empty state, not a blank section.
 
 ## Blocked by
 

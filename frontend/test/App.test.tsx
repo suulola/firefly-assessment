@@ -45,7 +45,7 @@ describe("App: click a Pokémon to see its detail", () => {
     );
     await renderReadyList();
 
-    await userEvent.click(screen.getByRole("button", { name: /bulbasaur/i }));
+    await userEvent.click(screen.getByRole("button", { name: /^bulbasaur/i }));
 
     expect(await screen.findByText("Grass")).toBeInTheDocument();
     expect(screen.getByText("Poison")).toBeInTheDocument();
@@ -62,10 +62,25 @@ describe("App: click a Pokémon to see its detail", () => {
     );
     await renderReadyList();
 
-    await userEvent.click(screen.getByRole("button", { name: /bulbasaur/i }));
+    await userEvent.click(screen.getByRole("button", { name: /^bulbasaur/i }));
 
     expect(await screen.findByRole("status", { name: /pokémon detail/i })).toBeInTheDocument();
     // The list itself stays ready — its own items are still visible, not replaced by a spinner.
+    expect(screen.getAllByRole("listitem")).toHaveLength(2);
+  });
+
+  it("shows the detail panel's own error state when the detail request fails, independently of the list", async () => {
+    mswServer.use(
+      http.get(`${BACKEND_BASE_URL}/pokemon/1`, () =>
+        HttpResponse.json({ statusCode: 502, message: "Failed to load this Pokémon." }, { status: 502 }),
+      ),
+    );
+    await renderReadyList();
+
+    await userEvent.click(screen.getByRole("button", { name: /^bulbasaur/i }));
+
+    expect(await screen.findByText(/couldn't load this pokémon/i)).toBeInTheDocument();
+    // The list itself stays ready — its own items are still visible, not replaced by an error box.
     expect(screen.getAllByRole("listitem")).toHaveLength(2);
   });
 
@@ -77,7 +92,7 @@ describe("App: click a Pokémon to see its detail", () => {
     );
     await renderReadyList();
 
-    await userEvent.click(screen.getByRole("button", { name: /bulbasaur/i }));
+    await userEvent.click(screen.getByRole("button", { name: /^bulbasaur/i }));
 
     expect(
       await screen.findByText(/this pokémon has no evolutions/i),

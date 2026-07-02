@@ -125,14 +125,9 @@
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 4px;
   padding: 9px 16px;
-  border: none;
   border-bottom: 1px solid #f3f2ee;
-  background: transparent;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
 }
 
 .row:hover {
@@ -142,6 +137,40 @@
 .rowSelected,
 .rowSelected:hover {
   background: rgba(76, 95, 213, 0.12);
+}
+
+.selectButton {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: none;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  padding: 0;
+}
+
+.favButton {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #4c5fd5;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.favButton:hover {
+  background: #f0eee8;
 }
 
 .avatar {

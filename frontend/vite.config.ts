@@ -11,6 +11,7 @@ export default defineConfig({
     proxy: {
       '/health': 'http://localhost:4000',
       '/pokemon': 'http://localhost:4000',
+      '/favorites': 'http://localhost:4000',
     },
   },
   test: {

@@ -1,7 +1,7 @@
 ---
 title: Favorites add/remove, end-to-end
 labels: [ready-for-agent]
-status: open
+status: done
 ---
 
 ## What to build

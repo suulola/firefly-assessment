@@ -36,3 +36,23 @@ export async function getPokemonDetail(id: number): Promise<PokemonDetail> {
   }
   return (await response.json()) as PokemonDetail;
 }
+
+export async function addFavorite(id: number): Promise<void> {
+  const response = await fetch(`${BACKEND_BASE_URL}/favorites`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id }),
+  });
+  if (!response.ok) {
+    throw new Error("Failed to save this favorite.");
+  }
+}
+
+export async function removeFavorite(id: number): Promise<void> {
+  const response = await fetch(`${BACKEND_BASE_URL}/favorites/${id}`, {
+    method: "DELETE",
+  });
+  if (!response.ok) {
+    throw new Error("Failed to remove this favorite.");
+  }
+}

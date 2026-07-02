@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getPokemonDetail, type PokemonDetail as PokemonDetailData } from "../lib/pokemonClient";
 import { formatName, numberLabel } from "../lib/pokemonFormat";
 import { colorForType } from "../lib/typeColors";
@@ -9,20 +9,33 @@ type Status = "loading" | "ready" | "error";
 interface PokemonDetailProps {
   pokemonId: number | null;
   onSelect: (id: number) => void;
+  favoriteIds: Set<number>;
+  onToggleFavorite: (id: number) => void;
 }
 
-export function PokemonDetail({ pokemonId, onSelect }: PokemonDetailProps) {
+export function PokemonDetail({
+  pokemonId,
+  onSelect,
+  favoriteIds,
+  onToggleFavorite,
+}: PokemonDetailProps) {
   const [status, setStatus] = useState<Status>("loading");
   const [detail, setDetail] = useState<PokemonDetailData | null>(null);
+  const requestIdRef = useRef<number | null>(null);
 
   function load(id: number) {
+    requestIdRef.current = id;
     setStatus("loading");
     getPokemonDetail(id)
       .then((data) => {
+        if (requestIdRef.current !== id) return; // a newer selection superseded this request
         setDetail(data);
         setStatus("ready");
       })
-      .catch(() => setStatus("error"));
+      .catch(() => {
+        if (requestIdRef.current !== id) return;
+        setStatus("error");
+      });
   }
 
   useEffect(() => {
@@ -82,10 +95,23 @@ export function PokemonDetail({ pokemonId, onSelect }: PokemonDetailProps) {
                   alt={formatName(detail.name)}
                 />
               </div>
-              <div>
+              <div style={{ flex: 1 }}>
                 <div className={styles.number}>{numberLabel(detail.id)}</div>
                 <div className={styles.name}>{formatName(detail.name)}</div>
               </div>
+              <button
+                type="button"
+                className={styles.favButton}
+                aria-pressed={favoriteIds.has(detail.id)}
+                onClick={() => onToggleFavorite(detail.id)}
+              >
+                <span className={styles.favIcon}>
+                  {favoriteIds.has(detail.id) ? "★" : "☆"}
+                </span>
+                <span>
+                  {favoriteIds.has(detail.id) ? "Favorited" : "Add to favorites"}
+                </span>
+              </button>
             </div>
 
             <div className={styles.section}>

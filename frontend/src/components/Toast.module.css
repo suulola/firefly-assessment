@@ -1,0 +1,21 @@
+@keyframes toastIn {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  background: #2a2822;
+  color: #fff;
+  padding: 11px 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: "Manrope", sans-serif;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  animation: toastIn 0.2s ease;
+  z-index: 10;
+}

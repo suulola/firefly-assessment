@@ -143,6 +143,29 @@
   gap: 22px;
 }
 
+.favButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: 1px solid #eceae5;
+  background: #fff;
+  color: #4c5fd5;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.favButton:hover {
+  background: #fafaf8;
+}
+
+.favIcon {
+  font-size: 17px;
+}
+
 .avatar {
   width: 96px;
   height: 96px;
